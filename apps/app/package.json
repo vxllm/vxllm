@@ -39,6 +39,7 @@
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "recharts": "2.15.4",
     "sonner": "catalog:",
     "streamdown": "^2.5.0",
     "use-stick-to-bottom": "^1.1.3",
