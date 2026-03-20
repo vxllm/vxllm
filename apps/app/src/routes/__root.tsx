@@ -11,6 +11,7 @@ import { HeadContent, Outlet, createRootRouteWithContext } from "@tanstack/react
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "@vxllm/ui/components/sonner";
 
+import { AppNav } from "@/components/app-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { orpc } from "@/utils/orpc";
 
@@ -52,8 +53,11 @@ function RootComponent() {
         disableTransitionOnChange
         storageKey="vite-ui-theme"
       >
-        <div className="h-svh">
-          <Outlet />
+        <div className="flex h-svh">
+          <AppNav />
+          <div className="flex-1 overflow-hidden">
+            <Outlet />
+          </div>
         </div>
         <Toaster richColors />
       </ThemeProvider>
