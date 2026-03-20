@@ -14,6 +14,8 @@
     "desktop:build": "tauri build"
   },
   "dependencies": {
+    "@fontsource/geist-mono": "^5.2.7",
+    "@fontsource/geist-sans": "^5.2.5",
     "@hookform/resolvers": "^5.1.1",
     "@libsql/client": "catalog:",
     "@orpc/client": "catalog:",
@@ -26,7 +28,6 @@
     "@vxllm/env": "workspace:*",
     "@vxllm/ui": "workspace:*",
     "dotenv": "catalog:",
-    "geist": "^1.7.0",
     "libsql": "catalog:",
     "lucide-react": "catalog:",
     "next-themes": "catalog:",

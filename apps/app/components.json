@@ -16,7 +16,7 @@
     "utils": "@vxllm/ui/lib/utils",
     "ui": "@vxllm/ui/components",
     "lib": "@/lib",
-    "hooks": "@/hooks"
+    "hooks": "@vxllm/ui/hooks"
   },
   "menuColor": "default",
   "menuAccent": "subtle",

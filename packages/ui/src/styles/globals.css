@@ -84,7 +84,7 @@
 }
 
 @theme inline {
-  --font-sans: "Geist", sans-serif;
+  --font-sans: "Geist Sans", sans-serif;
   --font-mono: "Geist Mono", monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
