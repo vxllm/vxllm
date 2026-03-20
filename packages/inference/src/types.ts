@@ -41,6 +41,8 @@ export interface ModelInfo {
   name: string;
   /** Human-readable display name */
   displayName: string;
+  /** Short description of the model */
+  description: string | null;
   /** Model type */
   type: "llm" | "stt" | "tts" | "embedding";
   /** Model file format */
