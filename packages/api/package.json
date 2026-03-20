@@ -7,6 +7,9 @@
     },
     "./*": {
       "default": "./src/*.ts"
+    },
+    "./services/*": {
+      "default": "./src/services/*.ts"
     }
   },
   "scripts": {},
@@ -16,7 +19,9 @@
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
     "@vxllm/db": "workspace:*",
+    "@vxllm/inference": "workspace:*",
     "@vxllm/env": "workspace:*",
+    "drizzle-orm": "^0.45.1",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

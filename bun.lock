@@ -139,7 +139,9 @@
         "@orpc/zod": "catalog:",
         "@vxllm/db": "workspace:*",
         "@vxllm/env": "workspace:*",
+        "@vxllm/inference": "workspace:*",
         "dotenv": "catalog:",
+        "drizzle-orm": "^0.45.1",
         "zod": "catalog:",
       },
       "devDependencies": {

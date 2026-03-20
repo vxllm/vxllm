@@ -1,13 +1,10 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { generateText, streamText } from "ai";
-import { db } from "@vxllm/db";
-import { conversations, messages } from "@vxllm/db/schema/conversations";
-import { usageMetrics } from "@vxllm/db/schema/metrics";
 import { ChatCompletionRequestSchema } from "@vxllm/api/schemas/openai";
+import { persistChat } from "@vxllm/api/services/chat.service";
 import type { ModelManager, Registry } from "@vxllm/inference";
 import { createLlamaProvider } from "@vxllm/llama-provider";
-import { eq } from "drizzle-orm";
 
 /**
  * POST /v1/chat/completions
@@ -141,8 +138,9 @@ export function createChatRoute(deps: {
 
         // Persist to DB after streaming completes (fire-and-forget)
         const latencyMs = Date.now() - startTime;
-        persistChatToDb({
+        persistChat({
           conversationId,
+          modelId: null,
           userContent:
             request.messages[request.messages.length - 1]?.content ?? "",
           assistantContent: fullText,
@@ -174,8 +172,9 @@ export function createChatRoute(deps: {
         result.usage.totalTokens ?? inputTokens + outputTokens;
 
       // Persist to DB (fire-and-forget)
-      persistChatToDb({
+      persistChat({
         conversationId,
+        modelId: null,
         userContent:
           request.messages[request.messages.length - 1]?.content ?? "",
         assistantContent: result.text,
@@ -211,89 +210,3 @@ export function createChatRoute(deps: {
   return chat;
 }
 
-// ── DB Persistence Helper ─────────────────────────────────────────────────────
-
-interface PersistChatParams {
-  conversationId: string;
-  userContent: string;
-  assistantContent: string;
-  tokensIn: number;
-  tokensOut: number;
-  latencyMs: number;
-  firstMessageContent?: string;
-}
-
-/**
- * Persist a chat exchange to the database.
- *
- * Creates the conversation if it doesn't exist, inserts user and assistant
- * messages, and records a usage metric entry.
- */
-async function persistChatToDb(params: PersistChatParams): Promise<void> {
-  const {
-    conversationId,
-    userContent,
-    assistantContent,
-    tokensIn,
-    tokensOut,
-    latencyMs,
-    firstMessageContent,
-  } = params;
-
-  const now = Date.now();
-
-  // Check if conversation exists, create if not
-  const existing = await db
-    .select()
-    .from(conversations)
-    .where(eq(conversations.id, conversationId))
-    .limit(1);
-
-  if (!existing.length) {
-    await db.insert(conversations).values({
-      id: conversationId,
-      title: firstMessageContent?.slice(0, 50) ?? "New conversation",
-      modelId: null, // modelId in conversations references models.id (DB UUID), not the name
-      createdAt: now,
-      updatedAt: now,
-    });
-  } else {
-    // Update the conversation's updatedAt timestamp
-    await db
-      .update(conversations)
-      .set({ updatedAt: now })
-      .where(eq(conversations.id, conversationId));
-  }
-
-  // Insert user message
-  await db.insert(messages).values({
-    id: crypto.randomUUID(),
-    conversationId,
-    role: "user",
-    content: userContent,
-    createdAt: now,
-  });
-
-  // Insert assistant message
-  await db.insert(messages).values({
-    id: crypto.randomUUID(),
-    conversationId,
-    role: "assistant",
-    content: assistantContent,
-    tokensIn,
-    tokensOut,
-    latencyMs,
-    createdAt: now,
-  });
-
-  // Insert usage metric
-  await db.insert(usageMetrics).values({
-    id: crypto.randomUUID(),
-    modelId: null, // Would need the DB model UUID, not the name string
-    type: "chat",
-    tokensIn,
-    tokensOut,
-    latencyMs,
-    createdAt: now,
-  });
-}
