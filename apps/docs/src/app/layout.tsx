@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { RootProvider } from "fumadocs-ui/provider/next";
+import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+
+import { baseOptions } from "@/lib/layout.shared";
+import { source } from "@/lib/source";
 
 import "./global.css";
 
@@ -38,7 +42,11 @@ export default function Layout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col font-sans">
-        <RootProvider>{children}</RootProvider>
+        <RootProvider>
+          <DocsLayout tree={source.getPageTree()} {...baseOptions()}>
+            {children}
+          </DocsLayout>
+        </RootProvider>
       </body>
     </html>
   );
