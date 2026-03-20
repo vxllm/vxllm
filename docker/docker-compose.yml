@@ -1,0 +1,33 @@
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server
+    ports:
+      - "${PORT:-11500}:11500"
+    environment:
+      HOST: "0.0.0.0"
+      VOICE_SIDECAR_URL: "http://voice:11501"
+      DATABASE_URL: "file:/data/local.db"
+      MODELS_DIR: "/data/models"
+      API_KEY: "${API_KEY:-}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-*}"
+    volumes:
+      - vxllm-data:/data
+    depends_on:
+      - voice
+
+  voice:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.voice
+    ports:
+      - "${VOICE_PORT:-11501}:11501"
+    environment:
+      VOICE_SIDECAR_HOST: "0.0.0.0"
+      MODELS_DIR: "/data/models"
+    volumes:
+      - vxllm-data:/data
+
+volumes:
+  vxllm-data:

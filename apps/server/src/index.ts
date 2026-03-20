@@ -16,6 +16,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
+import { authMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
 import { createHealthRoute } from "./routes/health";
 import { createChatRoute } from "./routes/v1/chat";
@@ -45,6 +46,9 @@ app.use(
     allowMethods: ["GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"],
   }),
 );
+
+// ── Auth Middleware (after CORS, before routes) ──────────────────────────────
+app.use("/*", authMiddleware);
 
 // ── Error Handler (must be before routes) ─────────────────────────────────────
 app.use("/*", errorHandler);
