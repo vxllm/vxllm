@@ -4,6 +4,8 @@ import type { ChatStatus } from "ai";
 import { ArrowUpIcon, SquareIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { VoiceRecorder } from "@/components/chat/voice-recorder";
+
 export function ChatInput({
   onSend,
   status,
@@ -65,6 +67,10 @@ export function ChatInput({
           placeholder="Type a message..."
           className="min-h-[40px] max-h-[200px] resize-none"
           rows={1}
+        />
+        <VoiceRecorder
+          onTranscription={(text) => onSend(text)}
+          disabled={isStreaming}
         />
         {isStreaming ? (
           <Button variant="outline" size="icon" onClick={onStop} type="button">

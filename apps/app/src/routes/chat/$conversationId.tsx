@@ -1,21 +1,57 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ChatHeader } from "@/components/chat/chat-header";
 import { ChatInput } from "@/components/chat/chat-input";
 import { ChatMessages } from "@/components/chat/chat-messages";
 import { useChatWithPersistence } from "@/hooks/use-chat-persistence";
 import { orpc } from "@/utils/orpc";
+import { env } from "@vxllm/env/web";
 
 export const Route = createFileRoute("/chat/$conversationId")({
   component: ConversationPage,
 });
 
+/**
+ * Play TTS audio for the given text via the server's speech endpoint.
+ * Wrapped in try/catch to handle browser autoplay restrictions gracefully.
+ */
+async function playTTS(text: string): Promise<void> {
+  try {
+    const serverUrl = env.VITE_SERVER_URL;
+    const res = await fetch(`${serverUrl}/v1/audio/speech`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "kokoro:v1.0",
+        input: text,
+        voice: "af_sky",
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("[TTS] Speech request failed:", res.status);
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => URL.revokeObjectURL(url);
+    await audio.play();
+  } catch (err) {
+    // Browser autoplay policy may block this — log but don't crash
+    console.error("[TTS] Playback failed:", err);
+  }
+}
+
 function ConversationPage() {
   const { conversationId } = Route.useParams();
   const chat = useChatWithPersistence(conversationId);
   const [selectedModelId, setSelectedModelId] = useState<string | undefined>();
+  const [voiceOutput, setVoiceOutput] = useState(false);
+  const prevStatusRef = useRef(chat.status);
 
   const conversationQuery = useQuery(
     orpc.chat.getConversation.queryOptions({
@@ -25,6 +61,41 @@ function ConversationPage() {
 
   const title = conversationQuery.data?.title;
 
+  // Auto-play TTS when voice output is enabled and assistant finishes streaming
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = chat.status;
+
+    if (!voiceOutput) return;
+
+    const wasStreaming = prevStatus === "streaming" || prevStatus === "submitted";
+    const isReady = chat.status === "ready";
+
+    if (wasStreaming && isReady) {
+      const lastMsg = chat.messages[chat.messages.length - 1];
+      if (lastMsg?.role === "assistant") {
+        const text = lastMsg.parts
+          .filter(
+            (p): p is Extract<(typeof lastMsg.parts)[number], { type: "text" }> =>
+              p.type === "text",
+          )
+          .map((p) => p.text)
+          .join("");
+
+        if (text) {
+          playTTS(text);
+        }
+      }
+    }
+  }, [chat.status, chat.messages, voiceOutput]);
+
+  const handleSend = useCallback(
+    (text: string) => {
+      chat.sendMessage({ text });
+    },
+    [chat],
+  );
+
   return (
     <div className="flex h-full flex-col">
       <ChatHeader
@@ -32,6 +103,8 @@ function ConversationPage() {
         title={title}
         selectedModelId={selectedModelId}
         onModelChange={setSelectedModelId}
+        voiceOutput={voiceOutput}
+        onVoiceOutputChange={setVoiceOutput}
       />
 
       <ChatMessages
@@ -41,7 +114,7 @@ function ConversationPage() {
       />
 
       <ChatInput
-        onSend={(text) => chat.sendMessage({ text })}
+        onSend={handleSend}
         status={chat.status}
         onStop={chat.stop}
       />

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ModelSelector } from "@/components/chat/model-selector";
 import { SystemPromptEditor } from "@/components/chat/system-prompt-editor";
+import { VoiceToggle } from "@/components/chat/voice-toggle";
 import { useChatLayout } from "@/routes/chat/route";
 
 export function ChatHeader({
@@ -11,11 +12,15 @@ export function ChatHeader({
   title,
   selectedModelId,
   onModelChange,
+  voiceOutput,
+  onVoiceOutputChange,
 }: {
   conversationId: string;
   title?: string | null;
   selectedModelId?: string;
   onModelChange?: (modelId: string) => void;
+  voiceOutput?: boolean;
+  onVoiceOutputChange?: (enabled: boolean) => void;
 }) {
   const [systemPromptOpen, setSystemPromptOpen] = useState(false);
   const { isMobile, openMobileSidebar } = useChatLayout();
@@ -40,6 +45,12 @@ export function ChatHeader({
 
       <div className="flex shrink-0 items-center gap-2">
         <ModelSelector value={selectedModelId} onValueChange={onModelChange} />
+        {onVoiceOutputChange && (
+          <VoiceToggle
+            enabled={voiceOutput ?? false}
+            onToggle={onVoiceOutputChange}
+          />
+        )}
         <Button
           variant="ghost"
           size="icon-sm"
