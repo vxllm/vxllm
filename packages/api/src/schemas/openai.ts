@@ -1,9 +1,21 @@
 import { z } from "zod";
 
+// ── Tool Call ────────────────────────────────────────────────────────────────
+const ToolCallSchema = z.object({
+  id: z.string(),
+  type: z.literal("function"),
+  function: z.object({
+    name: z.string(),
+    arguments: z.string(),
+  }),
+});
+
 // ── Chat Completion Message ─────────────────────────────────────────────────
 export const ChatCompletionMessageSchema = z.object({
-  role: z.enum(["system", "user", "assistant"]),
-  content: z.string(),
+  role: z.enum(["system", "user", "assistant", "tool"]),
+  content: z.string().nullable(),
+  tool_calls: z.array(ToolCallSchema).optional(),
+  tool_call_id: z.string().optional(),
 });
 export type ChatCompletionMessage = z.infer<typeof ChatCompletionMessageSchema>;
 
@@ -20,6 +32,44 @@ export const ChatCompletionRequestSchema = z.object({
   stop: z.array(z.string()).optional(),
   n: z.number().int().positive().optional(),
   user: z.string().optional(),
+
+  // ── Response format ──────────────────────────────────────────────────────
+  response_format: z
+    .object({
+      type: z.enum(["text", "json_object", "json_schema"]),
+      json_schema: z
+        .object({
+          name: z.string(),
+          schema: z.record(z.string(), z.unknown()),
+        })
+        .optional(),
+    })
+    .optional(),
+
+  // ── Tool use ─────────────────────────────────────────────────────────────
+  tools: z
+    .array(
+      z.object({
+        type: z.literal("function"),
+        function: z.object({
+          name: z.string(),
+          description: z.string().optional(),
+          parameters: z.record(z.string(), z.unknown()),
+        }),
+      }),
+    )
+    .optional(),
+
+  tool_choice: z
+    .union([
+      z.literal("auto"),
+      z.literal("none"),
+      z.object({
+        type: z.literal("function"),
+        function: z.object({ name: z.string() }),
+      }),
+    ])
+    .optional(),
 });
 export type ChatCompletionRequest = z.infer<typeof ChatCompletionRequestSchema>;
 
@@ -40,6 +90,7 @@ export const ChatCompletionResponseSchema = z.object({
     z.object({
       message: ChatCompletionMessageSchema.extend({
         role: z.literal("assistant"),
+        tool_calls: z.array(ToolCallSchema).optional(),
       }),
       finish_reason: z.string().nullable(),
       index: z.number().int(),
@@ -62,6 +113,21 @@ export const ChatCompletionChunkSchema = z.object({
       delta: z.object({
         role: z.enum(["assistant"]).optional(),
         content: z.string().optional(),
+        tool_calls: z
+          .array(
+            z.object({
+              index: z.number().int(),
+              id: z.string().optional(),
+              type: z.literal("function").optional(),
+              function: z
+                .object({
+                  name: z.string().optional(),
+                  arguments: z.string().optional(),
+                })
+                .optional(),
+            }),
+          )
+          .optional(),
       }),
       finish_reason: z.string().nullable(),
       index: z.number().int(),
@@ -70,6 +136,50 @@ export const ChatCompletionChunkSchema = z.object({
   usage: UsageSchema.optional(),
 });
 export type ChatCompletionChunk = z.infer<typeof ChatCompletionChunkSchema>;
+
+// ── Completion Request (legacy /v1/completions) ─────────────────────────────
+export const CompletionRequestSchema = z.object({
+  model: z.string(),
+  prompt: z.union([z.string(), z.array(z.string())]),
+  max_tokens: z.number().int().positive().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  top_p: z.number().min(0).max(1).optional(),
+  frequency_penalty: z.number().min(-2).max(2).optional(),
+  presence_penalty: z.number().min(-2).max(2).optional(),
+  stop: z.array(z.string()).optional(),
+  n: z.number().int().positive().optional(),
+  stream: z.boolean().optional(),
+  logprobs: z.number().int().min(0).max(5).nullable().optional(),
+  echo: z.boolean().optional(),
+  suffix: z.string().nullable().optional(),
+  user: z.string().optional(),
+});
+export type CompletionRequest = z.infer<typeof CompletionRequestSchema>;
+
+// ── Completion Response ─────────────────────────────────────────────────────
+export const CompletionResponseSchema = z.object({
+  id: z.string(),
+  object: z.literal("text_completion"),
+  created: z.number().int(),
+  model: z.string(),
+  choices: z.array(
+    z.object({
+      text: z.string(),
+      index: z.number().int(),
+      logprobs: z
+        .object({
+          tokens: z.array(z.string()),
+          token_logprobs: z.array(z.number()),
+          top_logprobs: z.array(z.record(z.string(), z.number())).nullable(),
+          text_offset: z.array(z.number().int()),
+        })
+        .nullable(),
+      finish_reason: z.string().nullable(),
+    }),
+  ),
+  usage: UsageSchema,
+});
+export type CompletionResponse = z.infer<typeof CompletionResponseSchema>;
 
 // ── Embedding Request ───────────────────────────────────────────────────────
 export const EmbeddingRequestSchema = z.object({
