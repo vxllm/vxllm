@@ -1,0 +1,8 @@
+{
+  "extends": "@vxllm/config/tsconfig/bun",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

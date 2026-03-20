@@ -1,0 +1,28 @@
+{
+  "name": "cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "vxllm": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "citty": "^0.1.6",
+    "consola": "^3.2.3",
+    "@vxllm/inference": "workspace:*",
+    "@vxllm/llama-provider": "workspace:*",
+    "@vxllm/db": "workspace:*",
+    "@vxllm/env": "workspace:*",
+    "ai": "^6.0.0",
+    "drizzle-orm": "^0.45.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.4",
+    "@vxllm/config": "workspace:*",
+    "typescript": "^5"
+  }
+}
