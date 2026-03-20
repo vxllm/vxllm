@@ -36,7 +36,7 @@ export function Hero() {
             View on GitHub
           </a>
           <a
-            href="https://docs.vxllm.dev"
+            href="https://docs.vxllm.com"
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
           >
             Get Started

@@ -20,7 +20,7 @@ export function Footer() {
 
         <nav className="flex items-center gap-6">
           <a
-            href="https://docs.vxllm.dev"
+            href="https://docs.vxllm.com"
             className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
           >
             Docs
