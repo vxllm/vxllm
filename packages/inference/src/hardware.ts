@@ -97,9 +97,11 @@ export function calculateGpuLayers(
   }
 
   // Look up bits per weight for this quantization tier
+  // Currently unused because modelSizeBytes already reflects quantization,
+  // but kept for potential future per-layer VRAM estimation improvements.
   const tier =
     QUANTIZATION_TIERS[quantTier as keyof typeof QUANTIZATION_TIERS];
-  const bitsPerWeight = tier?.bitsPerWeight ?? 4.8; // Default to Q4_K_M if unknown
+  void tier;
 
   // Reserve 500MB for KV cache + 500MB for OS/framework overhead
   const KV_CACHE_RESERVE = 500 * 1024 * 1024;
