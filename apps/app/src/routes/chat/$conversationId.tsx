@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 
 import { ChatHeader } from "@/components/chat/chat-header";
 import { ChatInput } from "@/components/chat/chat-input";
@@ -9,8 +10,13 @@ import { useChatWithPersistence } from "@/hooks/use-chat-persistence";
 import { orpc } from "@/utils/orpc";
 import { env } from "@vxllm/env/web";
 
+const conversationSearchSchema = z.object({
+  prompt: z.string().optional(),
+});
+
 export const Route = createFileRoute("/chat/$conversationId")({
   component: ConversationPage,
+  validateSearch: conversationSearchSchema,
 });
 
 /**
@@ -48,10 +54,28 @@ async function playTTS(text: string): Promise<void> {
 
 function ConversationPage() {
   const { conversationId } = Route.useParams();
+  const { prompt } = Route.useSearch();
+  const navigate = useNavigate();
   const chat = useChatWithPersistence(conversationId);
   const [selectedModelId, setSelectedModelId] = useState<string | undefined>();
   const [voiceOutput, setVoiceOutput] = useState(false);
   const prevStatusRef = useRef(chat.status);
+  const promptSentRef = useRef(false);
+
+  // Auto-send the prompt from search params (used by example prompt cards)
+  useEffect(() => {
+    if (prompt && !promptSentRef.current && chat.status === "ready") {
+      promptSentRef.current = true;
+      chat.sendMessage({ text: prompt });
+      // Clear the search param to avoid re-sending on re-render
+      navigate({
+        to: "/chat/$conversationId",
+        params: { conversationId },
+        search: {},
+        replace: true,
+      });
+    }
+  }, [prompt, chat, conversationId, navigate]);
 
   const conversationQuery = useQuery(
     orpc.chat.getConversation.queryOptions({

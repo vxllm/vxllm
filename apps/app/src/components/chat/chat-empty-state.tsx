@@ -28,10 +28,15 @@ export function ChatEmptyState() {
   const navigate = useNavigate();
   const { isMobile, openMobileSidebar } = useChatLayout();
 
-  const handlePromptClick = (_prompt: string) => {
-    // TODO: In future tasks, this will create a new conversation with this prompt
-    // or store it for the chat input to pick up.
-    navigate({ to: "/chat" });
+  const handlePromptClick = (prompt: string) => {
+    // Create a new conversation and navigate to it with the prompt as a search param.
+    // The conversation page will read the prompt param and auto-send it.
+    const conversationId = crypto.randomUUID();
+    navigate({
+      to: "/chat/$conversationId",
+      params: { conversationId },
+      search: { prompt },
+    });
   };
 
   return (
