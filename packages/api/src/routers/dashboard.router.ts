@@ -1,5 +1,6 @@
 import { sql, gte } from "drizzle-orm";
 import os from "node:os";
+import { getLlama } from "node-llama-cpp";
 
 import { publicProcedure } from "../index";
 import { MetricsPeriodInput } from "../schemas/dashboard";
@@ -91,10 +92,25 @@ export const dashboardRouter = {
 
     const active = context.modelManager?.getActive() ?? null;
 
+    // GPU VRAM utilization via node-llama-cpp
+    let gpuPercent: number | null = null;
+    try {
+      const llama = await getLlama();
+      if (llama.supportsGpuOffloading) {
+        const vramState = await llama.getVramState();
+        if (vramState.total > 0) {
+          gpuPercent =
+            Math.round((vramState.used / vramState.total) * 1000) / 10;
+        }
+      }
+    } catch {
+      // GPU detection may fail on systems without a compatible GPU — leave as null
+    }
+
     return {
       cpuPercent,
       ramPercent,
-      gpuPercent: null as number | null,
+      gpuPercent,
       activeModel: active?.modelInfo.name ?? null,
       memoryUsage: {
         usedMb: Math.round((totalMem - freeMem) / 1024 / 1024),
