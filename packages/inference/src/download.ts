@@ -252,6 +252,7 @@ export class DownloadManager {
 
   /**
    * Download a single file from HuggingFace using streaming for progress tracking.
+   * Supports resuming partial downloads via HTTP Range headers.
    */
   private async downloadSingleFile(
     modelId: string,
@@ -275,12 +276,38 @@ export class DownloadManager {
     // Update total bytes from the actual file info
     progress.totalBytes = info.size;
 
+    // Check for existing partial download to support resume
+    const destPath = path.join(modelsDir, modelInfo.fileName!);
+    const tempPath = `${destPath}.download`;
+    let resumeOffset = 0;
+
+    if (fs.existsSync(tempPath)) {
+      const stat = fs.statSync(tempPath);
+      resumeOffset = stat.size;
+    }
+
+    // If the partial file is already complete (or larger), discard it and start fresh
+    if (resumeOffset >= info.size) {
+      resumeOffset = 0;
+    }
+
+    // Build fetch headers — add Range header if resuming
+    const headers: Record<string, string> = {};
+    if (resumeOffset > 0) {
+      headers["Range"] = `bytes=${resumeOffset}-`;
+    }
+
     // Use the direct download URL from fileDownloadInfo to get a streaming response
     const response = await fetch(info.url, {
       signal: abortController.signal,
+      headers,
     });
 
-    if (!response.ok) {
+    // Handle Range response: 206 = partial content (resume), 200 = full content
+    if (response.status === 200 && resumeOffset > 0) {
+      // Server ignored the Range header — restart from scratch
+      resumeOffset = 0;
+    } else if (response.status !== 200 && response.status !== 206) {
       throw new Error(
         `Download failed with HTTP ${response.status}: ${response.statusText}`,
       );
@@ -290,17 +317,22 @@ export class DownloadManager {
       throw new Error("Response has no body stream");
     }
 
-    // Set up file writing
-    const destPath = path.join(modelsDir, modelInfo.fileName!);
-    const tempPath = `${destPath}.download`;
-
-    // Ensure we clean up the temp file on errors
-    const writer = fs.createWriteStream(tempPath);
+    // Set up file writing — append if resuming, overwrite if starting fresh
+    const writer = fs.createWriteStream(tempPath, {
+      flags: resumeOffset > 0 ? "a" : "w",
+    });
 
     const reader = response.body.getReader();
-    let downloadedBytes = 0;
+    let downloadedBytes = resumeOffset;
     let lastSpeedUpdate = Date.now();
-    let lastSpeedBytes = 0;
+    let lastSpeedBytes = downloadedBytes;
+
+    // Update progress to reflect resumed offset
+    progress.downloadedBytes = downloadedBytes;
+    progress.progressPct =
+      info.size > 0
+        ? Math.min(100, Math.round((downloadedBytes / info.size) * 100))
+        : 0;
 
     try {
       while (true) {
@@ -446,7 +478,8 @@ export class DownloadManager {
   /**
    * Resume a paused download.
    *
-   * Currently re-downloads from scratch (range resume not yet supported).
+   * Uses HTTP Range headers to resume from where the download left off,
+   * reading the partial `.download` file size as the byte offset.
    *
    * @param modelId - The model ID to resume
    */
@@ -485,19 +518,32 @@ export class DownloadManager {
       return;
     }
 
-    // Reset progress for re-download
+    // Read the partial file size to determine resume offset
+    let resumedBytes = 0;
+    if (modelInfo.fileName) {
+      const modelsDir = this.getModelsDir();
+      const tempPath = path.join(modelsDir, `${modelInfo.fileName}.download`);
+      if (fs.existsSync(tempPath)) {
+        resumedBytes = fs.statSync(tempPath).size;
+      }
+    }
+
+    // Restore progress from the partial file offset (not resetting to 0)
     progress.status = "active";
-    progress.downloadedBytes = 0;
-    progress.progressPct = 0;
+    progress.downloadedBytes = resumedBytes;
+    progress.progressPct =
+      progress.totalBytes > 0
+        ? Math.min(100, Math.round((resumedBytes / progress.totalBytes) * 100))
+        : 0;
     progress.error = null;
 
-    // Update DB
+    // Update DB with resumed byte count
     await db
       .update(downloadQueue)
       .set({
         status: "active",
-        downloadedBytes: 0,
-        progressPct: 0,
+        downloadedBytes: resumedBytes,
+        progressPct: progress.progressPct,
         startedAt: Date.now(),
       })
       .where(eq(downloadQueue.modelId, modelId));
@@ -507,7 +553,8 @@ export class DownloadManager {
       .set({ status: "downloading", updatedAt: Date.now() })
       .where(eq(models.id, modelId));
 
-    // Re-download
+    // Resume download — startDownload -> downloadSingleFile will detect the
+    // partial .download file and add the Range header automatically
     this.startDownload(modelId, modelInfo, progress).catch((err) => {
       progress.status = "failed";
       progress.error = err instanceof Error ? err.message : String(err);
