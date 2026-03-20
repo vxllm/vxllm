@@ -9,8 +9,19 @@ export const gitConfig = {
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: "VxLLM",
+      title: (
+        <span className="flex items-center gap-2 font-semibold">
+          <img src="/logo-no-bg.png" alt="" className="h-6 w-6" />
+          VxLLM
+        </span>
+      ),
     },
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
+    links: [
+      {
+        text: "Website",
+        url: "https://vxllm.com",
+      },
+    ],
   };
 }
