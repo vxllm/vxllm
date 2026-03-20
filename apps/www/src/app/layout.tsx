@@ -6,9 +6,48 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VxLLM — Open Source Local AI Server",
+  title: {
+    default: "VxLLM — Open Source Local AI Server",
+    template: "%s | VxLLM",
+  },
   description:
-    "Self-hostable AI model server with LLM inference, voice I/O, and OpenAI-compatible API.",
+    "Self-hostable AI model server with LLM inference, voice I/O, and OpenAI-compatible API. Run AI models locally with no cloud dependency.",
+  keywords: [
+    "AI",
+    "LLM",
+    "local AI",
+    "model server",
+    "OpenAI API",
+    "self-hosted",
+    "open source",
+    "voice AI",
+    "TTS",
+    "STT",
+    "llama.cpp",
+    "GGUF",
+  ],
+  authors: [{ name: "DataHase" }],
+  creator: "DataHase",
+  metadataBase: new URL("https://vxllm.com"),
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://vxllm.com",
+    title: "VxLLM — Open Source Local AI Server",
+    description:
+      "Self-hostable AI model server with LLM inference, voice I/O, and OpenAI-compatible API.",
+    siteName: "VxLLM",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "VxLLM — Open Source Local AI Server",
+    description:
+      "Run AI models locally with voice I/O and OpenAI-compatible API.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
