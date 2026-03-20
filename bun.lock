@@ -183,7 +183,9 @@
       "version": "0.0.0",
       "dependencies": {
         "@huggingface/hub": "^2.11.0",
+        "@vxllm/db": "workspace:*",
         "@vxllm/env": "workspace:*",
+        "drizzle-orm": "^0.45.1",
         "node-llama-cpp": "^3.18.1",
         "zod": "^4.1.13",
       },
