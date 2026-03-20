@@ -1,0 +1,19 @@
+{
+  "name": "@vxllm/inference",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@vxllm/env": "workspace:*",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.4",
+    "@vxllm/config": "workspace:*",
+    "typescript": "^5"
+  }
+}
