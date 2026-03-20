@@ -66,7 +66,7 @@ export function createChatRoute(deps: {
     // Convert OpenAI messages format to AI SDK format
     const aiMessages = request.messages.map((m) => ({
       role: m.role as "system" | "user" | "assistant",
-      content: m.content,
+      content: m.content ?? "",
     }));
 
     // Resolve conversation ID from header or generate a new one
@@ -149,7 +149,7 @@ export function createChatRoute(deps: {
           tokensIn: inputTokens,
           tokensOut: outputTokens,
           latencyMs,
-          firstMessageContent: request.messages[0]?.content,
+          firstMessageContent: request.messages[0]?.content ?? undefined,
         }).catch((err) => {
           console.error("[chat] DB persistence failed:", err);
         });
@@ -182,7 +182,7 @@ export function createChatRoute(deps: {
         tokensIn: inputTokens,
         tokensOut: outputTokens,
         latencyMs,
-        firstMessageContent: request.messages[0]?.content,
+        firstMessageContent: request.messages[0]?.content ?? undefined,
       }).catch((err) => {
         console.error("[chat] DB persistence failed:", err);
       });

@@ -5,23 +5,7 @@ import { db } from "@vxllm/db";
 import { usageMetrics } from "@vxllm/db/schema/metrics";
 import type { ModelManager } from "@vxllm/inference";
 import { createLlamaProvider } from "@vxllm/llama-provider";
-import { z } from "zod";
-
-// ── Request Validation Schema ─────────────────────────────────────────────────
-const CompletionRequestSchema = z.object({
-  model: z.string(),
-  prompt: z.union([z.string(), z.array(z.string())]),
-  max_tokens: z.number().int().positive().optional(),
-  temperature: z.number().min(0).max(2).optional(),
-  top_p: z.number().min(0).max(1).optional(),
-  stream: z.boolean().optional(),
-  stop: z.array(z.string()).optional(),
-  frequency_penalty: z.number().min(-2).max(2).optional(),
-  presence_penalty: z.number().min(-2).max(2).optional(),
-  suffix: z.string().optional(),
-  echo: z.boolean().optional(),
-  user: z.string().optional(),
-});
+import { CompletionRequestSchema } from "@vxllm/api/schemas/openai";
 
 /**
  * POST /v1/completions
