@@ -20,17 +20,44 @@ The server will be available at `http://localhost:11500`.
 
 ### Using Docker Compose
 
-For the full stack (server + voice sidecar):
+For the full stack (server + voice sidecar), create a `docker-compose.yml`:
+
+```yaml
+services:
+  server:
+    image: datahase/vxllm:latest
+    ports:
+      - "11500:11500"
+    environment:
+      HOST: "0.0.0.0"
+      VOICE_SIDECAR_URL: "http://voice:11501"
+      DATABASE_URL: "file:/data/local.db"
+      MODELS_DIR: "/data/models"
+      API_KEY: "${API_KEY:-}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-*}"
+    volumes:
+      - vxllm-data:/data
+    depends_on:
+      - voice
+
+  voice:
+    image: datahase/vxllm-voice:latest
+    ports:
+      - "11501:11501"
+    environment:
+      VOICE_SIDECAR_HOST: "0.0.0.0"
+      MODELS_DIR: "/data/models"
+    volumes:
+      - vxllm-data:/data
+
+volumes:
+  vxllm-data:
+```
+
+Then run:
 
 ```bash
-git clone https://github.com/datahase/vxllm.git
-cd vxllm
-
-# Configure environment
-cp docker/.env.example docker/.env
-
-# Start everything
-docker compose -f docker/docker-compose.yml up -d
+docker compose up -d
 ```
 
 ## Architecture
@@ -91,16 +118,26 @@ curl http://localhost:11500/api/models/pull \
 
 Models are stored in the shared Docker volume and persist across container restarts.
 
-## Docker Compose File
+## Building from Source
 
-The full `docker/docker-compose.yml`:
+If you prefer to build the Docker images yourself instead of pulling from Docker Hub:
+
+```bash
+git clone https://github.com/datahase/vxllm.git
+cd vxllm
+docker compose -f docker/docker-compose.yml up -d
+```
+
+The `docker/docker-compose.yml` in the repository uses `build` directives to compile from source. This is useful for development or customization.
+
+## Docker Compose Reference
+
+Full compose file using Docker Hub images:
 
 ```yaml
 services:
   server:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.server
+    image: datahase/vxllm:latest
     ports:
       - "${PORT:-11500}:11500"
     environment:
@@ -116,9 +153,7 @@ services:
       - voice
 
   voice:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.voice
+    image: datahase/vxllm-voice:latest
     ports:
       - "${VOICE_PORT:-11501}:11501"
     environment:
