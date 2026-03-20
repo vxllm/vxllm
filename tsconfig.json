@@ -1,0 +1,3 @@
+{
+  "extends": "@vxllm/config/tsconfig.base.json"
+}
