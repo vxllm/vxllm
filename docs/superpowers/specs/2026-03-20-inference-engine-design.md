@@ -28,7 +28,7 @@ This sub-project implements the core inference pipeline end-to-end: from hardwar
 | Tool calling (prompt-based, model-dependent) | Speculative decoding / prompt caching |
 | HuggingFace model downloads with resume | Vision/multimodal |
 | models.json registry with 5 seed models | |
-| OpenAI-compatible routes (/v1/chat/completions, /v1/embeddings, /v1/models) | |
+| OpenAI-compatible routes (/v1/chat/completions, /v1/completions, /v1/embeddings, /v1/models) | |
 | Streaming (SSE) + non-streaming responses | |
 | DB persistence (messages, usage_metrics, conversations) | |
 | Model pull API (/api/models/pull, /api/models/status) | |
@@ -86,11 +86,18 @@ Wraps node-llama-cpp v3 model lifecycle:
 
 **`createContext(sessionId: string)`**
 - Creates an isolated inference context (context sequence) for concurrent request handling
+- Note: This method is not in the existing stub — it will be added during implementation
+
+**`countTokens(text: string): number`**
+- Uses node-llama-cpp's native tokenizer to count tokens for a given text
+- Essential for context budgeting: before sending messages to inference, count total tokens and truncate oldest messages (keeping system prompt + most recent) if they exceed context window
+- Note: Not in existing stub — will be added during implementation
 
 **Design decisions:**
 - One LLM model loaded at a time (swap requires unload → load)
 - Embedding model can be loaded alongside the LLM (different use case)
 - Context size: `min(env.MAX_CONTEXT_SIZE, modelMaxContext)`
+- Concurrency: node-llama-cpp v3 supports context sequences for ~4-8 concurrent requests. Requests beyond this limit are queued in-memory with a 30s timeout. If queue is full, return 429 Too Many Requests.
 - node-llama-cpp v3 API specifics will be discovered during implementation — the stubs define the contract, the implementation adapts to the actual API
 
 ---
@@ -107,11 +114,11 @@ Fork `ai-sdk-llama-cpp` source code into `packages/llama-provider`. Do NOT insta
 
 ### 2.2 LlamaChatLanguageModel
 
-Implements AI SDK `LanguageModelV1` interface:
+Implements the current AI SDK `LanguageModel` interface (exact version — V1, V2, or versionless — determined at implementation time by checking the installed `ai` package exports):
 
 **`doGenerate(options): Promise<{ text, usage, finishReason }>`**
 - Takes messages + settings from AI SDK
-- Applies chat template (auto-detected or configured): `llama3`, `chatml`, `gemma`, `mistral-v1`, `mistral-v3`, `phi3`, `phi4`, `deepseek`
+- Applies chat template — primarily auto-detected from GGUF metadata by node-llama-cpp v3; configurable override via `chatTemplate` option. Expected format coverage: `llama3`, `chatml`, `gemma`, `mistral-v1`, `mistral-v3`, `phi3`, `phi4`, `deepseek`
 - Runs inference via node-llama-cpp through `ModelManager`
 - Returns complete response with token counts
 
@@ -133,7 +140,7 @@ Implements AI SDK `LanguageModelV1` interface:
 
 ### 2.3 LlamaEmbeddingModel
 
-Implements AI SDK `EmbeddingModelV1`:
+Implements the current AI SDK `EmbeddingModel` interface (version determined at implementation time):
 
 **`doEmbed(options): Promise<{ embeddings: number[][] }>`**
 - Takes string or string array
@@ -214,8 +221,9 @@ Note: STT and TTS models are registry entries only — they're downloaded but co
 
 Uses `@huggingface/hub` for HuggingFace downloads.
 
-**`pull(name, options?): Promise<DownloadProgress>`**
-- Resolves model via Registry
+**`pull(name, options?: { variant?: string; priority?: number }): Promise<DownloadProgress>`**
+- Resolves model via Registry (name can include variant: `qwen2.5:7b:q4_k_m`)
+- If `variant` option provided, overrides the auto-selected variant
 - Creates `download_queue` DB entry with status `"queued"`
 - Starts streaming download to `MODELS_DIR` (default `~/.vxllm/models`)
 - Tracks progress: bytes downloaded, speed (bytes/sec), ETA
@@ -258,6 +266,7 @@ apps/server/src/
 ├── routes/
 │   ├── v1/
 │   │   ├── chat.ts           # POST /v1/chat/completions
+│   │   ├── completions.ts    # POST /v1/completions (raw text completion)
 │   │   ├── embeddings.ts     # POST /v1/embeddings
 │   │   └── models.ts         # GET /v1/models
 │   ├── api/
@@ -276,8 +285,15 @@ Routes mounted in `index.ts` as Hono sub-apps.
 - Resolve model by name, load via `ModelManager` if not loaded
 - If `stream: true`: `streamText()` → SSE chunks (`data: {...}\n\n` + `data: [DONE]\n\n`)
 - If `stream: false`: `generateText()` → full JSON response
-- Supports `response_format: { type: "json_object" }` for structured output
+- Supports `response_format: { type: "json_object" }` and `{ type: "json_schema", json_schema: { name, schema } }` for structured output
 - Error format: `{ error: { message, type, code, param } }` matching OpenAI spec
+
+**`POST /v1/completions`**
+- Raw text completion (non-chat format)
+- Takes `{ model, prompt, max_tokens, temperature, stream, ... }`
+- If `stream: true`: SSE chunks; if `stream: false`: full JSON
+- Returns `{ id, object: "text_completion", choices: [{ text, finish_reason, index }], usage }`
+- Simpler than chat — no message array, just a prompt string
 
 **`POST /v1/embeddings`**
 - Takes `{ input: string | string[], model: string }`
@@ -354,6 +370,17 @@ After each `/v1/chat/completions` request:
 
 ---
 
+## Schema Extensions Required
+
+The following existing Zod schemas in `packages/api/src/schemas/openai.ts` need to be extended during implementation:
+
+- `ChatCompletionRequestSchema` — Add `response_format` (json_object | json_schema), `tools` (array of tool definitions), `tool_choice` (auto | none | specific function)
+- `ChatCompletionChunkSchema` — Add `tool_calls` in the delta object for streaming tool call responses
+- `ChatCompletionResponseSchema` — Add `tool_calls` in the message object for non-streaming tool call responses
+- Add new `CompletionRequestSchema` and `CompletionResponseSchema` for `/v1/completions`
+
+Additionally, `packages/inference/src/types.ts` needs a `description` field added to `ModelInfo` (present in DB schema and models.json but missing from the type).
+
 ## File Impact Summary
 
 | Area | Files Created | Files Modified |
@@ -362,11 +389,12 @@ After each `/v1/chat/completions` request:
 | `packages/inference/` | 0 | 1 (package.json — add deps) |
 | `packages/llama-provider/src/` | ~6 (fork source) | 4 (replace all stubs) |
 | `packages/llama-provider/` | 0 | 1 (package.json — add deps) |
-| `apps/server/src/routes/` | 5 (chat.ts, embeddings.ts, models.ts x2, health.ts) | 0 |
+| `packages/api/src/schemas/` | 0 | 1 (openai.ts — add response_format, tools, completions) |
+| `apps/server/src/routes/` | 6 (chat.ts, completions.ts, embeddings.ts, models.ts x2, health.ts) | 0 |
 | `apps/server/src/middleware/` | 1 (error-handler.ts) | 0 |
 | `apps/server/src/` | 0 | 1 (index.ts — mount routes, lifecycle) |
 | Root | 1 (models.json) | 0 |
-| **Total** | **~13** | **~12** |
+| **Total** | **~14** | **~13** |
 
 ## Success Criteria
 
@@ -383,6 +411,7 @@ After each `/v1/chat/completions` request:
 - [ ] Download resume works after interruption
 - [ ] `POST /v1/chat/completions` (stream: true) returns valid SSE
 - [ ] `POST /v1/chat/completions` (stream: false) returns valid JSON
+- [ ] `POST /v1/completions` returns valid text completion response
 - [ ] `POST /v1/embeddings` returns valid embedding response
 - [ ] `GET /v1/models` lists downloaded models
 - [ ] `POST /api/models/pull` starts a download
