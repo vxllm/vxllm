@@ -20,6 +20,8 @@
     "@orpc/zod": "catalog:",
     "@vxllm/db": "workspace:*",
     "@vxllm/inference": "workspace:*",
+    "@vxllm/llama-provider": "workspace:*",
+    "ai": "^6.0.116",
     "@vxllm/env": "workspace:*",
     "drizzle-orm": "^0.45.1",
     "dotenv": "catalog:",

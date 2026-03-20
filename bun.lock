@@ -140,6 +140,8 @@
         "@vxllm/db": "workspace:*",
         "@vxllm/env": "workspace:*",
         "@vxllm/inference": "workspace:*",
+        "@vxllm/llama-provider": "workspace:*",
+        "ai": "^6.0.116",
         "dotenv": "catalog:",
         "drizzle-orm": "^0.45.1",
         "zod": "catalog:",
