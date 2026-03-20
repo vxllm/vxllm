@@ -1,0 +1,66 @@
+import { useNavigate } from "@tanstack/react-router";
+import { Card, CardContent } from "@vxllm/ui/components/card";
+import { Cpu } from "lucide-react";
+
+const EXAMPLE_PROMPTS = [
+  {
+    title: "Explain quantum computing",
+    prompt: "Explain quantum computing in simple terms",
+  },
+  {
+    title: "Python sort function",
+    prompt: "Write a Python function to sort a list",
+  },
+  {
+    title: "Debug React component",
+    prompt: "Help me debug this React component",
+  },
+  {
+    title: "REST API best practices",
+    prompt: "What are best practices for REST API design?",
+  },
+] as const;
+
+export function ChatEmptyState() {
+  const navigate = useNavigate();
+
+  const handlePromptClick = (_prompt: string) => {
+    // TODO: In future tasks, this will create a new conversation with this prompt
+    // or store it for the chat input to pick up.
+    navigate({ to: "/chat" });
+  };
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-6 p-8">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
+          <Cpu className="size-6 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold">Start a new conversation</h2>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Choose a prompt below or type your own message to get started.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid w-full max-w-lg grid-cols-2 gap-3">
+        {EXAMPLE_PROMPTS.map((item) => (
+          <Card
+            key={item.title}
+            size="sm"
+            className="cursor-pointer transition-colors hover:bg-muted/50"
+            onClick={() => handlePromptClick(item.prompt)}
+          >
+            <CardContent>
+              <p className="text-sm font-medium">{item.title}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                {item.prompt}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
