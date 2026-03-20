@@ -11,7 +11,7 @@ VxLLM is an open-source, self-hostable AI model server that runs LLM, STT (Speec
 | Runtime | Bun |
 | Server | Hono |
 | LLM Inference | node-llama-cpp v3 (in-process, Metal/CUDA/CPU auto-detect) |
-| AI SDK | ai (Vercel) + ai-sdk-llama-cpp (forked) + @ai-sdk/react |
+| AI SDK | ai (Vercel) + Fresh AI SDK adapter on node-llama-cpp (packages/llama-provider) + @ai-sdk/react |
 | API (app routes) | oRPC + Zod |
 | API (OpenAI compat) | Raw Hono routes |
 | Database | Drizzle ORM + SQLite (libsql/Turso) |
@@ -50,7 +50,7 @@ Tauri 2 (Rust) — spawns processes:
     ├── POST /speak → Kokoro TTS
     └── WS /stream → real-time VAD + STT
 
-React UI (apps/web) talks to Hono (localhost:11500)
+React UI (apps/app) talks to Hono (localhost:11500)
 ```
 
 ## User Roles
@@ -80,14 +80,15 @@ React UI (apps/web) talks to Hono (localhost:11500)
 ```
 vxllm/
 ├── apps/
-│   ├── web/              # React+Vite+TanStack Router+Tauri 2
+│   ├── app/              # React+Vite+TanStack Router+Tauri 2 (desktop + web UI)
 │   │   └── src-tauri/    # Rust: process mgmt, system tray
 │   ├── server/           # Hono+Bun+node-llama-cpp (main API)
 │   ├── cli/              # citty CLI
-│   └── fumadocs/         # Documentation site
+│   ├── docs/             # Documentation site (Fumadocs)
+│   └── www/              # Marketing website (Next.js)
 ├── packages/
 │   ├── inference/        # node-llama-cpp wrapper, hardware detect, model downloads
-│   ├── llama-provider/   # Forked ai-sdk-llama-cpp (AI SDK LanguageModelV3 provider)
+│   ├── llama-provider/   # Fresh AI SDK adapter on node-llama-cpp (AI SDK LanguageModelV3 provider)
 │   ├── api/              # oRPC router definitions + Zod schemas
 │   ├── db/               # Drizzle schemas + migrations (SQLite)
 │   ├── ui/               # shadcn/ui shared components
@@ -124,8 +125,11 @@ All project docs in `docs/project/`:
 ```bash
 bun install              # Install dependencies
 bun run dev              # Start all apps in dev mode
-bun run dev:web          # Start web app only
+bun run dev:app          # Start app only
 bun run dev:server       # Start server only
+bun run dev:cli          # Start CLI in dev mode
+bun run dev:www          # Start marketing website
+bun run dev:docs         # Start documentation site
 bun run build            # Build all apps
 bun run check-types      # TypeScript type checking
 bun run db:push          # Push schema to database

@@ -91,10 +91,11 @@ for await (const chunk of response) {
 ```
 vxllm/
 ├── apps/
-│   ├── web/              # React frontend + Tauri desktop
+│   ├── app/              # React frontend + Tauri desktop
 │   ├── server/           # Hono API server
 │   ├── cli/              # Terminal CLI
-│   └── fumadocs/         # Documentation site
+│   ├── docs/             # Documentation site (Fumadocs)
+│   └── www/              # Marketing website (Next.js)
 ├── packages/
 │   ├── inference/        # node-llama-cpp engine wrapper
 │   ├── llama-provider/   # AI SDK provider for llama.cpp
@@ -114,7 +115,7 @@ vxllm/
 ```bash
 bun install              # Install all dependencies
 bun run dev              # Start all apps (web + server + docs)
-bun run dev:web          # Start web app only
+bun run dev:app          # Start app only
 bun run dev:server       # Start API server only
 bun run build            # Build all apps for production
 bun run check-types      # TypeScript type checking
@@ -127,7 +128,7 @@ bun run db:studio        # Open Drizzle Studio
 ### Desktop App
 
 ```bash
-cd apps/web
+cd apps/app
 bun run desktop:dev      # Start Tauri dev mode
 bun run desktop:build    # Build desktop app (.dmg, .exe, .AppImage)
 ```

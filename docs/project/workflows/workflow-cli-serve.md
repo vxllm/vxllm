@@ -245,8 +245,9 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
   ├─────────────────────────────────────────────────────────────────┤
   │ Version: 1.0.0                                                  │
   │ Server: http://127.0.0.1:11500                                  │
-  │ WebUI: http://127.0.0.1:11500/ui                                │
-  │ API Docs: http://127.0.0.1:11500/docs                           │
+  │ Health: http://127.0.0.1:11500/health                           │
+  │ Models: http://127.0.0.1:11500/v1/models                        │
+  │ RPC: http://127.0.0.1:11500/rpc/*                               │
   │ Model: llama3.1:8b (loaded)                                     │
   │ Voice: enabled (/ws/chat)                                       │
   │ Database: /home/user/.vxllm/vxllm.db                            │

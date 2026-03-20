@@ -22,7 +22,7 @@ VxLLM's design prioritizes:
 
 ### Configuration
 
-VxLLM uses Tailwind v4 with native CSS variables for dynamic theming. Configuration file: `apps/web/tailwind.config.ts`
+VxLLM uses Tailwind v4 with native CSS variables for dynamic theming. Configuration file: `apps/app/tailwind.config.ts`
 
 **Key Features:**
 - CSS variables for all colors, sizes, spacing
@@ -389,6 +389,8 @@ theme: {
 },
 ```
 
+> **Note:** The project uses the `oklch()` color space (Tailwind v4 default). The actual CSS variables in `globals.css` are defined in oklch format. The `hsl(var(--...))` references above are for illustration; in practice, colors resolve through oklch() for better perceptual uniformity.
+
 Use in components:
 ```tsx
 <Button className="bg-accent hover:bg-accent/90">
@@ -410,10 +412,13 @@ Use in components:
 ### Font Stack
 
 ```css
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+font-family: "Geist Sans", sans-serif;
 ```
 
-Tailwind includes this as `font-sans` (default).
+Monospace (code blocks, terminal output):
+```css
+font-family: "Geist Mono", monospace;
+```
 
 ### Type Scale
 

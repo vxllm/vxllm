@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED:** This document describes the original Python + FastAPI architecture plan. The project now uses **Bun + Hono + node-llama-cpp**. See `CLAUDE.md` for the current architecture. This document is preserved for historical context only.
+
 # VxLLM — Open Source Local AI Server with Voice
 ### Detailed Plan of Action
 

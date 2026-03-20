@@ -100,8 +100,8 @@ VxLLM is built on a modern, type-safe stack optimized for fast local AI inferenc
 - Provides `generateObject()` for structured outputs (JSON)
 - Language-agnostic provider pattern
 
-**Custom Provider:** `ai-sdk-llama-cpp` (forked into `packages/llama-provider`)
-- Implements AI SDK provider interface for node-llama-cpp
+**Custom Provider:** Fresh AI SDK adapter built on node-llama-cpp (`packages/llama-provider`)
+- Purpose-built AI SDK provider interface for node-llama-cpp (not a fork of ai-sdk-llama-cpp)
 - Enables `streamText` and `generateObject` over local models
 - Handles token streaming and cost estimation
 - Type-safe prompt/completion definitions
@@ -252,7 +252,7 @@ VxLLM is built on a modern, type-safe stack optimized for fast local AI inferenc
 **Category:** File-Based Routing
 **Purpose:** Type-safe, file-based routing for React SPA
 
-**Location:** `apps/web/src/routes`
+**Location:** `apps/app/src/routes`
 
 **Why Chosen:**
 - Automatic route inference from filesystem
@@ -282,7 +282,7 @@ VxLLM is built on a modern, type-safe stack optimized for fast local AI inferenc
 - Huge ecosystem of plugins
 - Performance optimized
 
-**Configuration:** `apps/web/tailwind.config.ts`
+**Configuration:** `apps/app/tailwind.config.ts`
 
 **Dark Mode:** Integrated via `next-themes` package
 
@@ -451,7 +451,7 @@ VxLLM is built on a modern, type-safe stack optimized for fast local AI inferenc
 
 **Architecture:**
 - Frontend: React+Vite (unchanged from web version)
-- Backend: Rust (in `apps/web/src-tauri`)
+- Backend: Rust (in `apps/app/src-tauri`)
 - IPC: JSON-based command system
 
 **Key Responsibilities:**
@@ -730,7 +730,7 @@ docker compose up
 ```
 vxllm/
 ├── apps/
-│   ├── web/                    # React + Vite + TanStack Router
+│   ├── app/                    # React + Vite + TanStack Router (desktop + web UI)
 │   │   ├── src/
 │   │   │   ├── routes/         # File-based routing
 │   │   │   ├── components/     # React components
@@ -766,9 +766,12 @@ vxllm/
 │   │   │       └── list.ts
 │   │   └── package.json
 │   │
-│   └── fumadocs/               # Documentation site (Next.js)
-│       ├── app/
-│       ├── content/            # Markdown docs
+│   ├── docs/                   # Documentation site (Fumadocs, Next.js)
+│   │   ├── app/
+│   │   ├── content/            # Markdown docs
+│   │   └── package.json
+│   │
+│   └── www/                    # Marketing website (Next.js)
 │       └── package.json
 │
 ├── packages/
@@ -780,7 +783,7 @@ vxllm/
 │   │   │   └── download.ts     # Model downloads
 │   │   └── package.json
 │   │
-│   ├── llama-provider/         # AI SDK provider (forked)
+│   ├── llama-provider/         # AI SDK provider (fresh adapter)
 │   │   ├── src/
 │   │   │   ├── index.ts
 │   │   │   ├── stream.ts       # Streaming implementation
