@@ -1,3 +1,15 @@
 @import "tailwindcss";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
+
+:root {
+  --fd-primary: 160 84% 39%;
+  --fd-primary-foreground: 160 50% 98%;
+  --fd-muted: 160 10% 96%;
+}
+
+.dark {
+  --fd-primary: 160 90% 55%;
+  --fd-primary-foreground: 160 50% 5%;
+  --fd-muted: 160 5% 12%;
+}

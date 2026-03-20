@@ -17,11 +17,5 @@ export function baseOptions(): BaseLayoutProps {
       ),
     },
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
-    links: [
-      {
-        text: "Website",
-        url: "https://vxllm.com",
-      },
-    ],
   };
 }
