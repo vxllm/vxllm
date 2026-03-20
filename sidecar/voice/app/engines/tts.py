@@ -9,49 +9,21 @@ from __future__ import annotations
 
 import io
 import logging
-import struct
 from typing import AsyncGenerator
+
+import numpy as np
+import soundfile as sf
 
 from app.config import TTS_VOICE
 
 logger = logging.getLogger(__name__)
 
-# Available voices when Kokoro is loaded — will be populated dynamically.
-_PLACEHOLDER_VOICES: list[dict] = [
-    {"id": "af_sky", "name": "Sky (Female)", "language": "en"},
-    {"id": "af_bella", "name": "Bella (Female)", "language": "en"},
-    {"id": "am_adam", "name": "Adam (Male)", "language": "en"},
-    {"id": "am_michael", "name": "Michael (Male)", "language": "en"},
+KOKORO_VOICES: list[dict] = [
+    {"id": "af_heart", "name": "Heart (Female)", "language": "en-US"},
+    {"id": "af_sky", "name": "Sky (Female)", "language": "en-US"},
+    {"id": "am_michael", "name": "Michael (Male)", "language": "en-US"},
+    {"id": "bf_emma", "name": "Emma (Female)", "language": "en-GB"},
 ]
-
-
-def _build_wav_header(
-    sample_rate: int = 24000,
-    bits_per_sample: int = 16,
-    num_channels: int = 1,
-    data_size: int = 0,
-) -> bytes:
-    """Build a minimal WAV header for streaming."""
-    byte_rate = sample_rate * num_channels * bits_per_sample // 8
-    block_align = num_channels * bits_per_sample // 8
-
-    header = struct.pack(
-        "<4sI4s4sIHHIIHH4sI",
-        b"RIFF",
-        36 + data_size,  # file size - 8
-        b"WAVE",
-        b"fmt ",
-        16,  # chunk size
-        1,  # PCM format
-        num_channels,
-        sample_rate,
-        byte_rate,
-        block_align,
-        bits_per_sample,
-        b"data",
-        data_size,
-    )
-    return header
 
 
 class TTSEngine:
@@ -62,48 +34,40 @@ class TTSEngine:
     """
 
     def __init__(self) -> None:
-        self._pipeline: object | None = None
+        self.pipeline: object | None = None
         self._loaded: bool = False
         self._backend: str = "none"
         self._default_voice: str = TTS_VOICE
 
-    @property
-    def is_loaded(self) -> bool:
-        return self._loaded
-
-    @property
-    def backend(self) -> str:
-        return self._backend
-
-    async def load(self) -> None:
-        """Attempt to load a TTS backend."""
+    def load(self, lang_code: str = "a") -> None:
+        """Attempt to load the Kokoro TTS backend."""
         if self._loaded:
             return
 
-        # --- Try Kokoro ---
+        logger.info("Loading Kokoro TTS pipeline...")
         try:
-            import kokoro  # noqa: F401
+            from kokoro import KPipeline
 
-            logger.info("Kokoro package found — loading TTS pipeline …")
-            pipeline = kokoro.KPipeline(lang_code="a")
-            self._pipeline = pipeline
-            self._backend = "kokoro"
+            self.pipeline = KPipeline(lang_code=lang_code)
             self._loaded = True
-            logger.info("Kokoro TTS loaded successfully.")
-            return
-        except ImportError:
-            logger.info("Kokoro not installed — will use placeholder TTS.")
-        except Exception:
-            logger.warning("Kokoro failed to initialize — falling back to placeholder.", exc_info=True)
+            self._backend = "kokoro"
+            logger.info("Kokoro TTS loaded successfully")
+        except Exception as e:
+            logger.warning(f"Failed to load Kokoro: {e}. Using placeholder.")
+            self._loaded = True
+            self._backend = "placeholder"
 
-        # --- Placeholder (silent audio) ---
-        self._backend = "placeholder"
-        self._loaded = True
-        logger.info("Using placeholder TTS (returns silence).")
+    def is_loaded(self) -> bool:
+        """Return whether any TTS backend has been loaded."""
+        return self._loaded
+
+    def get_backend(self) -> str:
+        """Return the name of the active backend."""
+        return self._backend
 
     def get_voices(self) -> list[dict]:
         """Return the list of available voices."""
-        return list(_PLACEHOLDER_VOICES)
+        return KOKORO_VOICES
 
     async def synthesize_stream(
         self,
@@ -113,72 +77,37 @@ class TTSEngine:
     ) -> AsyncGenerator[bytes, None]:
         """Generate WAV audio bytes for *text*.
 
-        Yields the WAV header first, then PCM data chunks.
+        Yields complete WAV chunks — one per sentence when using
+        Kokoro, or a single silent WAV when using the placeholder.
         """
         if not self._loaded:
-            await self.load()
+            self.load()
 
         voice = voice or self._default_voice
 
-        if self._backend == "kokoro" and self._pipeline is not None:
-            async for chunk in self._synthesize_kokoro(text, voice, speed):
-                yield chunk
-        else:
-            async for chunk in self._synthesize_placeholder(text, speed):
-                yield chunk
-
-    # ---- Kokoro backend ------------------------------------------------
-
-    async def _synthesize_kokoro(
-        self,
-        text: str,
-        voice: str,
-        speed: float,
-    ) -> AsyncGenerator[bytes, None]:
-        """Stream audio from the Kokoro pipeline."""
-        import numpy as np
-
-        pipeline = self._pipeline
-        sample_rate = 24000
-
-        # Kokoro's generate() returns a generator of segments.
-        all_audio: list[bytes] = []
-        try:
-            for _gs, _ps, audio_np in pipeline.generate(  # type: ignore[union-attr]
-                text, voice=voice, speed=speed
-            ):
-                if audio_np is not None:
-                    pcm = (audio_np * 32767).astype(np.int16).tobytes()
-                    all_audio.append(pcm)
-        except Exception:
-            logger.exception("Kokoro synthesis failed")
-            # Fall through to yield silence
-            async for chunk in self._synthesize_placeholder(text, speed):
-                yield chunk
+        if self._backend == "placeholder" or self.pipeline is None:
+            yield self._generate_silence()
             return
 
-        data = b"".join(all_audio)
-        yield _build_wav_header(sample_rate=sample_rate, data_size=len(data))
-        # Yield data in 4 KB chunks for streaming
-        chunk_size = 4096
-        for i in range(0, len(data), chunk_size):
-            yield data[i : i + chunk_size]
+        try:
+            for _, _, audio in self.pipeline(  # type: ignore[operator]
+                text, voice=voice, speed=speed, split_pattern=r"[.!?]"
+            ):
+                buf = io.BytesIO()
+                sf.write(buf, audio, 24000, format="WAV")
+                buf.seek(0)
+                yield buf.read()
+        except Exception as e:
+            logger.error(f"TTS synthesis error: {e}")
+            yield self._generate_silence()
 
-    # ---- Placeholder backend -------------------------------------------
-
-    async def _synthesize_placeholder(
-        self,
-        text: str,
-        speed: float,
-    ) -> AsyncGenerator[bytes, None]:
-        """Return a short silent WAV.  Useful for integration testing."""
-        sample_rate = 24000
-        # ~0.5 s of silence
-        num_samples = int(sample_rate * 0.5 / max(speed, 0.1))
-        data = b"\x00\x00" * num_samples  # 16-bit silence
-
-        yield _build_wav_header(sample_rate=sample_rate, data_size=len(data))
-        yield data
+    def _generate_silence(self) -> bytes:
+        """Return a 1-second silent WAV at 24 kHz."""
+        buf = io.BytesIO()
+        silence = np.zeros(24000, dtype=np.float32)
+        sf.write(buf, silence, 24000, format="WAV")
+        buf.seek(0)
+        return buf.read()
 
 
 # Module-level singleton.
