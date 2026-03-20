@@ -24,14 +24,14 @@ VxLLM is a unified, self-hostable model server that runs LLM, Speech-to-Text, an
 ## Quick Start
 
 ```bash
-# Install dependencies
-bun install
+# Install VxLLM
+curl -fsSL https://vxllm.com/install.sh | sh
 
-# Push database schema
-bun run db:push
+# Pull a model
+vxllm pull qwen2.5:7b
 
-# Start development server
-bun run dev
+# Start the server
+vxllm serve
 ```
 
 The web app runs at [http://localhost:3001](http://localhost:3001) and the API at [http://localhost:11500](http://localhost:11500).

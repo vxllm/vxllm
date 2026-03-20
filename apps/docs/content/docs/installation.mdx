@@ -5,48 +5,77 @@ description: Three ways to install VxLLM — CLI, desktop app, or Docker.
 
 # Installation
 
-VxLLM can be installed in three ways depending on your use case.
+VxLLM can be installed in several ways depending on your use case.
 
-## CLI (Recommended for Developers)
+## Quick Install (Recommended)
 
-Install the VxLLM CLI globally using Bun:
+Install VxLLM with a single command:
 
 ```bash
-bun add -g vxllm
+curl -fsSL https://vxllm.com/install.sh | sh
 ```
 
-Verify the installation:
+This script automatically:
+- Detects your OS and architecture
+- Installs [Bun](https://bun.sh/) if not present
+- Clones and sets up VxLLM
+- Creates the `vxllm` command in your PATH
+
+After installation, pull a model and start chatting:
 
 ```bash
-vxllm --version
+vxllm pull qwen2.5:7b
+vxllm serve
+```
+
+## Manual CLI Install
+
+If you already have Bun installed, you can install from source:
+
+```bash
+git clone https://github.com/datahase/vxllm.git ~/.vxllm
+cd ~/.vxllm
+bun install
+```
+
+Then add the CLI to your PATH:
+
+```bash
+ln -sf ~/.vxllm/apps/cli/src/index.ts ~/.local/bin/vxllm
 ```
 
 ### Requirements
 
-- [Bun](https://bun.sh/) v1.1 or later
+- [Bun](https://bun.sh/) v1.3 or later
 - macOS (Apple Silicon or Intel), Linux, or Windows
 - 8 GB RAM minimum (16 GB recommended for 7B models)
 
 ## Desktop App
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/DataHase/vxllm/releases):
+Download the latest release for your platform from [GitHub Releases](https://github.com/datahase/vxllm/releases):
 
 | Platform | Download |
 |----------|----------|
-| macOS (Apple Silicon) | `VxLLM_aarch64.dmg` |
-| macOS (Intel) | `VxLLM_x64.dmg` |
-| Windows | `VxLLM_x64_en-US.msi` |
-| Linux (AppImage) | `VxLLM_amd64.AppImage` |
-| Linux (deb) | `VxLLM_amd64.deb` |
+| macOS (Apple Silicon) | Download from releases |
+| macOS (Intel) | Download from releases |
+| Windows (x86_64) | Download from releases |
+| Linux (x86_64 / ARM64) | Download from releases |
 
 The desktop app bundles the server and voice sidecar. No additional setup required.
 
 ## Docker
 
-For server deployment, use Docker Compose:
+Pull from Docker Hub and run:
 
 ```bash
-git clone https://github.com/DataHase/vxllm.git
+docker pull datahase/vxllm
+docker run -p 11500:11500 datahase/vxllm
+```
+
+Or use Docker Compose for the full stack (server + voice sidecar):
+
+```bash
+git clone https://github.com/datahase/vxllm.git
 cd vxllm
 
 # Copy and configure environment
@@ -63,10 +92,10 @@ See [Docker Deployment](/docs/deployment/docker) for full configuration options.
 ## Building from Source
 
 ```bash
-git clone https://github.com/DataHase/vxllm.git
+git clone https://github.com/datahase/vxllm.git
 cd vxllm
 bun install
-bun run build
+bun run db:push
 bun run dev:server
 ```
 
