@@ -32,7 +32,7 @@ export function Navbar() {
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         {/* Logo */}
         <a href="#" className="flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#2EFAA0]" />
+          <img src="/logo-no-bg.png" alt="VxLLM" className="h-6 w-6" />
           <span className="font-mono text-sm font-bold text-white">VxLLM</span>
         </a>
 
@@ -59,16 +59,9 @@ export function Navbar() {
             href="https://github.com/datahase/vxllm"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-neutral-700 bg-transparent px-4 py-2 text-sm text-neutral-300 transition-colors hover:border-neutral-500 hover:text-white"
+            className="inline-flex items-center justify-center rounded-lg border border-neutral-700 bg-transparent p-2 text-neutral-300 transition-colors hover:border-neutral-500 hover:text-white"
           >
-            <Github className="h-4 w-4" />
-            <span className="hidden sm:inline">GitHub</span>
-          </a>
-          <a
-            href="https://docs.vxllm.com"
-            className="inline-flex items-center rounded-lg bg-[#2EFAA0] px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-[#2EFAA0]/90"
-          >
-            Get Started
+            <Github className="h-5 w-5" />
           </a>
         </div>
       </nav>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AnimateOnScroll } from "./animate-on-scroll";
 import { ArrowDownToLine, ChevronRight } from "lucide-react";
 
@@ -33,7 +34,7 @@ const platforms = [
   {
     name: "macOS",
     Icon: AppleIcon,
-    architectures: ["Apple Silicon (M1–M4)", "Intel (x86_64)"],
+    architectures: ["Apple Silicon", "Intel"],
     description: "Full Metal GPU acceleration. Native performance on Apple hardware.",
     gradient: "from-white/[0.04] to-white/[0.01]",
   },
@@ -54,6 +55,8 @@ const platforms = [
 ];
 
 export function Download() {
+  const [macArch, setMacArch] = useState("apple-silicon");
+
   return (
     <section id="download" className="relative overflow-hidden bg-black px-6 py-28">
       {/* Subtle grid background */}
@@ -120,7 +123,15 @@ export function Download() {
 
                 {/* Download button(s) */}
                 {platform.name === "macOS" ? (
-                  <div className="mt-auto flex flex-col gap-2">
+                  <div className="mt-auto flex flex-col gap-3">
+                    <select
+                      value={macArch}
+                      onChange={(e) => setMacArch(e.target.value)}
+                      className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-neutral-300 outline-none focus:border-[#2EFAA0]/30"
+                    >
+                      <option value="apple-silicon">Apple Silicon</option>
+                      <option value="intel">Intel</option>
+                    </select>
                     <a
                       href={RELEASES_URL}
                       target="_blank"
@@ -128,16 +139,7 @@ export function Download() {
                       className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-[#2EFAA0]/30 hover:bg-[#2EFAA0]/[0.06] hover:text-[#2EFAA0]"
                     >
                       <ArrowDownToLine className="h-4 w-4" />
-                      Apple Silicon (M1–M4)
-                    </a>
-                    <a
-                      href={RELEASES_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-[#2EFAA0]/30 hover:bg-[#2EFAA0]/[0.06] hover:text-[#2EFAA0]"
-                    >
-                      <ArrowDownToLine className="h-4 w-4" />
-                      Intel (x86_64)
+                      Download for macOS
                     </a>
                   </div>
                 ) : (

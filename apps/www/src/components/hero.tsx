@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
 import { Terminal } from "./terminal";
 import { CopyButton } from "./copy-button";
 
@@ -87,7 +86,6 @@ export function Hero() {
             className="inline-flex items-center gap-2 rounded-lg bg-[#2EFAA0] px-6 py-3 text-sm font-medium text-black transition-all hover:bg-[#2EFAA0]/90 hover:shadow-[0_0_30px_rgba(46,250,160,0.3)]"
           >
             Get Started
-            <ArrowRight className="h-4 w-4" />
           </a>
         </div>
 
