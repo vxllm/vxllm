@@ -1,5 +1,5 @@
 {
-  "extends": "@vxllm/config/tsconfig.base.json",
+  "extends": "@vxllm/config/tsconfig/bun",
   "compilerOptions": {
     "composite": true,
     "outDir": "dist",

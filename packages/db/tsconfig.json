@@ -1,5 +1,5 @@
 {
-  "extends": "@vxllm/config/tsconfig.base.json",
+  "extends": "@vxllm/config/tsconfig/base",
   "compilerOptions": {
     "declaration": true,
     "declarationMap": true,

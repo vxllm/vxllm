@@ -1,9 +1,7 @@
 {
-  "extends": "@vxllm/config/tsconfig.base.json",
+  "extends": "@vxllm/config/tsconfig/react",
   "compilerOptions": {
     "baseUrl": ".",
-    "jsx": "react-jsx",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "paths": {
       "@vxllm/ui/*": ["./src/*"]
     }
