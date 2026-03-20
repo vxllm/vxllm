@@ -23,6 +23,7 @@ import { createCompletionsRoute } from "./routes/v1/completions";
 import { createEmbeddingsRoute } from "./routes/v1/embeddings";
 import { createModelsRoute } from "./routes/v1/models";
 import { createModelManagementRoute } from "./routes/api/models";
+import { createAudioRoutes } from "./routes/v1/audio";
 
 // ── Global Instances ──────────────────────────────────────────────────────────
 const modelManager = new ModelManager();
@@ -56,6 +57,9 @@ app.route("/v1/chat", createChatRoute({ modelManager, registry }));
 app.route("/v1", createCompletionsRoute({ modelManager }));
 app.route("/v1", createEmbeddingsRoute({ modelManager }));
 app.route("/v1", createModelsRoute());
+
+// ── Audio / Voice API (proxied to Python sidecar) ────────────────────────
+app.route("/v1/audio", createAudioRoutes());
 
 // ── Model Management API ──────────────────────────────────────────────────────
 app.route("/api/models", createModelManagementRoute({ downloadManager }));
