@@ -34,7 +34,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ```bash
 # Clone the repository
-git clone https://github.com/DataHase/vxllm.git
+git clone https://github.com/datahase/vxllm.git
 cd vxllm
 
 # Install dependencies

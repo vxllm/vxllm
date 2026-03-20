@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Github } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Terminal } from "./terminal";
 import { CopyButton } from "./copy-button";
 
@@ -82,16 +82,6 @@ export function Hero() {
             animation: "fadeUp 0.8s ease forwards 0.6s",
           }}
         >
-          <a
-            href="https://github.com/DataHase/vxllm"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg border border-neutral-700 bg-transparent px-6 py-3 text-sm font-medium text-neutral-200 transition-colors hover:border-neutral-500 hover:text-white"
-          >
-            <Github className="h-4 w-4" />
-            View on GitHub
-            <ArrowRight className="h-4 w-4" />
-          </a>
           <a
             href="https://docs.vxllm.com"
             className="inline-flex items-center gap-2 rounded-lg bg-[#2EFAA0] px-6 py-3 text-sm font-medium text-black transition-all hover:bg-[#2EFAA0]/90 hover:shadow-[0_0_30px_rgba(46,250,160,0.3)]"

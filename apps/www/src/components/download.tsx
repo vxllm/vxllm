@@ -3,7 +3,7 @@
 import { AnimateOnScroll } from "./animate-on-scroll";
 import { ArrowDownToLine, ChevronRight } from "lucide-react";
 
-const RELEASES_URL = "https://github.com/DataHase/vxllm/releases";
+const RELEASES_URL = "https://github.com/datahase/vxllm/releases";
 
 function AppleIcon({ className }: { className?: string }) {
   return (
@@ -83,10 +83,7 @@ export function Download() {
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {platforms.map((platform, i) => (
             <AnimateOnScroll key={platform.name} delay={i * 120}>
-              <a
-                href={RELEASES_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <div
                 className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-transparent p-8 transition-all duration-500 hover:border-[#2EFAA0]/20 hover:shadow-[0_0_60px_rgba(46,250,160,0.06)]"
               >
                 {/* Hover glow */}
@@ -121,13 +118,41 @@ export function Download() {
                   ))}
                 </div>
 
-                {/* Download button */}
-                <div className="mt-auto flex items-center gap-2 text-sm font-medium text-neutral-400 transition-all duration-300 group-hover:text-[#2EFAA0]">
-                  <ArrowDownToLine className="h-4 w-4" />
-                  <span>Download for {platform.name}</span>
-                  <ChevronRight className="h-3.5 w-3.5 translate-x-0 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100" />
-                </div>
-              </a>
+                {/* Download button(s) */}
+                {platform.name === "macOS" ? (
+                  <div className="mt-auto flex flex-col gap-2">
+                    <a
+                      href={RELEASES_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-[#2EFAA0]/30 hover:bg-[#2EFAA0]/[0.06] hover:text-[#2EFAA0]"
+                    >
+                      <ArrowDownToLine className="h-4 w-4" />
+                      Apple Silicon (M1–M4)
+                    </a>
+                    <a
+                      href={RELEASES_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-[#2EFAA0]/30 hover:bg-[#2EFAA0]/[0.06] hover:text-[#2EFAA0]"
+                    >
+                      <ArrowDownToLine className="h-4 w-4" />
+                      Intel (x86_64)
+                    </a>
+                  </div>
+                ) : (
+                  <a
+                    href={RELEASES_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-auto flex items-center gap-2 text-sm font-medium text-neutral-400 transition-all duration-300 hover:text-[#2EFAA0] group-hover:text-[#2EFAA0]"
+                  >
+                    <ArrowDownToLine className="h-4 w-4" />
+                    <span>Download for {platform.name}</span>
+                    <ChevronRight className="h-3.5 w-3.5 translate-x-0 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100" />
+                  </a>
+                )}
+              </div>
             </AnimateOnScroll>
           ))}
         </div>

@@ -191,8 +191,8 @@ The easiest way to contribute is adding models to `models.json`. See the [contri
 
 ## Community
 
-- [GitHub Issues](https://github.com/DataHase/vxllm/issues) — Bug reports
-- [GitHub Discussions](https://github.com/DataHase/vxllm/discussions) — Questions & ideas
+- [GitHub Issues](https://github.com/datahase/vxllm/issues) — Bug reports
+- [GitHub Discussions](https://github.com/datahase/vxllm/discussions) — Questions & ideas
 - [Contributing Guide](CONTRIBUTING.md) — How to contribute
 - [Code of Conduct](CODE_OF_CONDUCT.md) — Community standards
 - [Security Policy](SECURITY.md) — Reporting vulnerabilities
@@ -201,4 +201,4 @@ The easiest way to contribute is adding models to `models.json`. See the [contri
 
 VxLLM is open-source software licensed under the [MIT License](LICENSE).
 
-Built by [DataHase](https://github.com/dataHase).
+Built by [datahase](https://github.com/datahase).
