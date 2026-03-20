@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "name": "qwen2.5:7b",
+      "displayName": "Qwen 2.5 7B Instruct",
+      "type": "llm",
+      "format": "gguf",
+      "description": "Default chat, code, multilingual",
+      "tags": ["chat", "code", "multilingual"],
+      "variants": [
+        {
+          "variant": "q4_k_m",
+          "repo": "Qwen/Qwen2.5-7B-Instruct-GGUF",
+          "fileName": "qwen2.5-7b-instruct-q4_k_m.gguf",
+          "sizeBytes": 5040000000,
+          "minRamGb": 5,
+          "recommendedVramGb": 6
+        }
+      ]
+    },
+    {
+      "name": "phi-4-mini",
+      "displayName": "Phi-4 Mini Instruct",
+      "type": "llm",
+      "format": "gguf",
+      "description": "Low-resource fallback, compact and fast",
+      "tags": ["chat", "code", "compact"],
+      "variants": [
+        {
+          "variant": "q4_k_m",
+          "repo": "microsoft/Phi-4-mini-instruct-GGUF",
+          "fileName": "Phi-4-mini-instruct-Q4_K_M.gguf",
+          "sizeBytes": 2500000000,
+          "minRamGb": 3,
+          "recommendedVramGb": 4
+        }
+      ]
+    },
+    {
+      "name": "whisper:large-v3-turbo",
+      "displayName": "Whisper Large v3 Turbo",
+      "type": "stt",
+      "format": "whisper",
+      "description": "Real-time transcription",
+      "tags": ["stt", "transcription"],
+      "variants": [
+        {
+          "variant": "default",
+          "repo": "Systran/faster-whisper-large-v3-turbo",
+          "fileName": null,
+          "sizeBytes": 800000000,
+          "minRamGb": 2,
+          "recommendedVramGb": null
+        }
+      ]
+    },
+    {
+      "name": "kokoro:v1.0",
+      "displayName": "Kokoro v1.0 (82M)",
+      "type": "tts",
+      "format": "kokoro",
+      "description": "Voice synthesis, CPU-friendly",
+      "tags": ["tts", "voice"],
+      "variants": [
+        {
+          "variant": "default",
+          "repo": "hexgrad/Kokoro-82M",
+          "fileName": null,
+          "sizeBytes": 330000000,
+          "minRamGb": 1,
+          "recommendedVramGb": null
+        }
+      ]
+    },
+    {
+      "name": "nomic-embed:v1.5",
+      "displayName": "Nomic Embed Text v1.5",
+      "type": "embedding",
+      "format": "gguf",
+      "description": "RAG, semantic search",
+      "tags": ["embedding", "rag", "search"],
+      "variants": [
+        {
+          "variant": "q4_k_m",
+          "repo": "nomic-ai/nomic-embed-text-v1.5-GGUF",
+          "fileName": "nomic-embed-text-v1.5.Q4_K_M.gguf",
+          "sizeBytes": 80000000,
+          "minRamGb": 0.5,
+          "recommendedVramGb": null
+        }
+      ]
+    }
+  ]
+}
