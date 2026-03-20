@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@vxllm/ui/components/button";
 import { Card, CardContent } from "@vxllm/ui/components/card";
-import { Cpu, MenuIcon } from "lucide-react";
+import { MenuIcon } from "lucide-react";
 
 import { useChatLayout } from "@/routes/chat/route";
 
@@ -55,7 +55,7 @@ export function ChatEmptyState() {
       )}
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
-          <Cpu className="size-6 text-muted-foreground" />
+          <img src="/logo-no-bg.png" alt="VxLLM" className="size-6" />
         </div>
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">Start a new conversation</h2>

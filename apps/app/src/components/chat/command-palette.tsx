@@ -39,9 +39,9 @@ export function CommandPalette({
           </CommandItem>
           <CommandItem
             onSelect={() => {
-              // Focus the search input in the sidebar
+              // Focus the search input in the sidebar using a data attribute
               const searchInput = document.querySelector(
-                '[placeholder="Search conversations..."]',
+                '[data-sidebar-search]',
               ) as HTMLInputElement | null;
               if (searchInput) {
                 searchInput.focus();

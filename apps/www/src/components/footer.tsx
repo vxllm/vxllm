@@ -5,9 +5,12 @@ export function Footer() {
     <footer className="border-t border-neutral-800 bg-neutral-950 px-6 py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 sm:flex-row">
         <div className="flex items-center gap-6">
-          <span className="font-mono text-sm font-semibold text-neutral-300">
-            VxLLM
-          </span>
+          <div className="flex items-center gap-2">
+            <img src="/logo-no-bg.png" alt="VxLLM" className="h-6 w-6" />
+            <span className="font-mono text-sm font-semibold text-neutral-300">
+              VxLLM
+            </span>
+          </div>
           <a
             href="https://github.com/DataHase/vxllm"
             target="_blank"

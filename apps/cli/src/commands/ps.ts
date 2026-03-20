@@ -12,8 +12,11 @@ export default defineCommand({
     },
   },
   async run({ args }) {
+    const serverUrl =
+      process.env.VITE_SERVER_URL ||
+      `http://localhost:${process.env.PORT || "11500"}`;
     try {
-      const res = await fetch("http://localhost:11500/health");
+      const res = await fetch(`${serverUrl}/health`);
       const data = (await res.json()) as {
         model?: string;
         uptime_seconds?: number;

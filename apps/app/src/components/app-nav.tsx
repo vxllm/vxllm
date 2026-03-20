@@ -8,7 +8,6 @@ import {
 import {
   BarChart3,
   Box,
-  Cpu,
   MessageSquare,
   Settings,
 } from "lucide-react";
@@ -30,7 +29,7 @@ export function AppNav() {
       <nav className="flex h-full w-12 flex-col items-center border-r bg-card py-3">
         {/* Logo */}
         <div className="mb-4 flex items-center justify-center">
-          <Cpu className="size-6 text-primary" />
+          <img src="/logo-no-bg.png" alt="VxLLM" className="size-6" />
         </div>
 
         {/* Separator */}

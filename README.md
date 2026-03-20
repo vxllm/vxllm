@@ -201,4 +201,4 @@ The easiest way to contribute is adding models to `models.json`. See the [contri
 
 VxLLM is open-source software licensed under the [MIT License](LICENSE).
 
-Built by [DataHase](https://github.com/DataHase).
+Built by [DataHase](https://github.com/dataHase).

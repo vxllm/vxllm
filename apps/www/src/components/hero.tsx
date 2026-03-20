@@ -4,9 +4,11 @@ export function Hero() {
   return (
     <section className="relative flex min-h-[85vh] flex-col items-center justify-center overflow-hidden bg-neutral-950 px-6 py-32 text-center">
       {/* Gradient glow */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.12)_0%,transparent_70%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(46,250,160,0.12)_0%,transparent_70%)]" />
 
       <div className="relative z-10 mx-auto max-w-4xl">
+        <img src="/logo-no-bg.png" alt="VxLLM" className="mx-auto mb-6 h-16 w-16" />
+
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900 px-4 py-1.5 text-sm text-neutral-400">
           <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
           Open Source &middot; MIT License
@@ -14,7 +16,7 @@ export function Hero() {
 
         <h1 className="mb-6 text-5xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
           Run AI Models{" "}
-          <span className="bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-[#2EFAA0] to-cyan-400 bg-clip-text text-transparent">
             Locally
           </span>
         </h1>
@@ -37,7 +39,7 @@ export function Hero() {
           </a>
           <a
             href="https://docs.vxllm.com"
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#2EFAA0] px-6 py-3 text-sm font-medium text-neutral-950 transition-colors hover:bg-[#2EFAA0]/90"
           >
             Get Started
             <ArrowRight className="h-4 w-4" />

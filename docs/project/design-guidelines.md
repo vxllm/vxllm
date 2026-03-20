@@ -360,16 +360,18 @@ export function Modal({ isOpen }) {
 
 Based on Tailwind defaults, customized for VxLLM branding:
 
+**Brand Color:** `#2EFAA0` (vivid mint green) / `oklch(0.88 0.19 163)`
+
 **Light Mode (Default):**
 - Primary: `slate-900` (text) / `slate-50` (background)
-- Accent: `blue-600` (interactive elements)
+- Accent: Brand green `#2EFAA0` — lighter tint `oklch(0.93 0.08 163)` for backgrounds
 - Success: `green-600` (positive feedback)
 - Warning: `amber-600` (caution)
 - Danger: `red-600` (destructive, errors)
 
 **Dark Mode:**
-- Primary: `slate-50` (text) / `slate-950` (background)
-- Accent: `blue-500` (interactive, lighter for dark BG)
+- Primary: Brand green `#2EFAA0` / `oklch(0.88 0.19 163)` (interactive elements)
+- Accent: Dark green `oklch(0.35 0.08 163)` background, bright green text
 - Success: `green-500`
 - Warning: `amber-500`
 - Danger: `red-500`
@@ -400,7 +402,7 @@ Use in components:
 
 ### Status Colors
 
-- **Info:** `blue` (informational messages)
+- **Info:** `green` / brand green (informational messages)
 - **Success:** `green` (positive outcome, completion)
 - **Warning:** `amber` (cautionary, needs attention)
 - **Error:** `red` (problems, failures)
