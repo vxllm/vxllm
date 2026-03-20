@@ -1,7 +1,8 @@
 import type { UIMessage } from "ai";
 import type { ChatStatus } from "ai";
-import { BotIcon, CopyIcon, RefreshCwIcon, UserIcon } from "lucide-react";
-import { useCallback } from "react";
+import { BotIcon, CheckIcon, CopyIcon, RefreshCwIcon, UserIcon } from "lucide-react";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 
 import {
   Conversation,
@@ -25,8 +26,14 @@ export function ChatMessages({
   status: ChatStatus;
   onRegenerate?: () => void;
 }) {
-  const handleCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+
+  const handleCopy = useCallback((messageId: string, text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedMessageId(messageId);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    });
   }, []);
 
   const getMessageText = (message: UIMessage): string =>
@@ -85,10 +92,14 @@ export function ChatMessages({
               {message.role === "assistant" && !isStreaming && (
                 <MessageActions className="ml-10">
                   <MessageAction
-                    tooltip="Copy"
-                    onClick={() => handleCopy(getMessageText(message))}
+                    tooltip={copiedMessageId === message.id ? "Copied!" : "Copy"}
+                    onClick={() => handleCopy(message.id, getMessageText(message))}
                   >
-                    <CopyIcon />
+                    {copiedMessageId === message.id ? (
+                      <CheckIcon className="text-green-500" />
+                    ) : (
+                      <CopyIcon />
+                    )}
                   </MessageAction>
                   {isLastAssistant && onRegenerate && (
                     <MessageAction tooltip="Regenerate" onClick={onRegenerate}>

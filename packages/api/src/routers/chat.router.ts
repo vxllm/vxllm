@@ -3,7 +3,7 @@ import { eq, like, desc, and, lt, sql } from "drizzle-orm";
 import { generateText } from "ai";
 
 import { publicProcedure } from "../index";
-import { CreateConversationInput, AddMessageInput } from "../schemas/chat";
+import { CreateConversationInput, UpdateConversationInput, AddMessageInput } from "../schemas/chat";
 import { conversations, messages } from "@vxllm/db/schema/conversations";
 import { createLlamaProvider } from "@vxllm/llama-provider";
 import { persistChat } from "../services/chat.service";
@@ -86,6 +86,39 @@ export const chatRouter = {
         items,
         total: countResult?.total ?? 0,
       };
+    }),
+
+  // Mutation: update a conversation (title, model, system prompt)
+  updateConversation: publicProcedure
+    .input(UpdateConversationInput)
+    .handler(async ({ input, context }) => {
+      const [existing] = await context.db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, input.id))
+        .limit(1);
+
+      if (!existing) {
+        throw new Error(`Conversation not found: ${input.id}`);
+      }
+
+      const updates: Record<string, unknown> = { updatedAt: Date.now() };
+      if (input.title !== undefined) updates.title = input.title;
+      if (input.modelId !== undefined) updates.modelId = input.modelId;
+      if (input.systemPrompt !== undefined) updates.systemPrompt = input.systemPrompt;
+
+      await context.db
+        .update(conversations)
+        .set(updates)
+        .where(eq(conversations.id, input.id));
+
+      const [row] = await context.db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, input.id))
+        .limit(1);
+
+      return row!;
     }),
 
   // Mutation: delete a conversation and all its messages

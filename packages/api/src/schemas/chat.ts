@@ -20,6 +20,15 @@ export const ConversationOutput = z.object({
 });
 export type ConversationOutput = z.infer<typeof ConversationOutput>;
 
+// ── Update Conversation Input ────────────────────────────────────────────────
+export const UpdateConversationInput = z.object({
+  id: z.string(),
+  title: z.string().optional(),
+  modelId: z.string().nullable().optional(),
+  systemPrompt: z.string().nullable().optional(),
+});
+export type UpdateConversationInput = z.infer<typeof UpdateConversationInput>;
+
 // ── Add Message Input ───────────────────────────────────────────────────────
 export const AddMessageInput = z.object({
   conversationId: z.string(),
