@@ -13,8 +13,8 @@ export default function HomePage() {
       <Hero />
       <Features />
       <Comparison />
-      <Download />
       <DockerSection />
+      <Download />
       <Footer />
     </main>
   );

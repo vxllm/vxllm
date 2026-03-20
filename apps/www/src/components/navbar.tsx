@@ -7,6 +7,7 @@ const navLinks = [
   { label: "Features", href: "#features" },
   { label: "Compare", href: "#compare" },
   { label: "Docker", href: "#docker" },
+  { label: "Download", href: "#download" },
   { label: "Docs", href: "https://docs.vxllm.com", external: true },
 ];
 
