@@ -1,0 +1,76 @@
+---
+title: Configuration
+description: Environment variables and settings for VxLLM.
+---
+
+# Configuration
+
+VxLLM is configured via environment variables. When running locally, you can set them in a `.env` file in the project root. When using Docker, set them in `docker/.env` or pass them via `docker compose`.
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DATABASE_URL` | Yes | `file:./local.db` | SQLite database path or Turso URL |
+| `PORT` | No | `11500` | Server port |
+| `HOST` | No | `127.0.0.1` | Bind host. Use `0.0.0.0` for server/Docker mode |
+| `MODELS_DIR` | No | `~/.vxllm/models` | Directory for storing downloaded models |
+| `VOICE_SIDECAR_URL` | No | `http://localhost:11501` | Python voice sidecar URL |
+| `API_KEY` | No | — | API key for server mode authentication |
+| `LOG_LEVEL` | No | `info` | Logging verbosity: `debug`, `info`, `warn`, `error` |
+| `DEFAULT_MODEL` | No | — | Model to auto-load on startup (e.g. `qwen2.5:7b`) |
+| `CORS_ORIGINS` | No | `*` | Allowed CORS origins (comma-separated) |
+| `MAX_CONTEXT_SIZE` | No | `8192` | Default context window size in tokens |
+| `GPU_LAYERS_OVERRIDE` | No | — | Manual GPU layer count (overrides auto-detection) |
+| `MAX_CONCURRENT_DOWNLOADS` | No | `2` | Maximum parallel model downloads (1-5) |
+
+## Authentication
+
+Authentication is **disabled** when the server binds to `127.0.0.1` (localhost). This is the default for local development and the desktop app.
+
+When the server binds to `0.0.0.0` (server mode), authentication is **enforced**. Clients must include an API key in the `Authorization` header:
+
+```
+Authorization: Bearer vx-your-api-key-here
+```
+
+API keys are managed via the dashboard or the oRPC management API.
+
+## Model Storage
+
+Models are stored in the `MODELS_DIR` directory (default: `~/.vxllm/models`). Each model is a GGUF file downloaded from HuggingFace.
+
+To change the storage location:
+
+```bash
+export MODELS_DIR=/path/to/your/models
+vxllm serve
+```
+
+## GPU Configuration
+
+VxLLM auto-detects your GPU and uses it for inference when available:
+
+- **Apple Silicon** — Uses Metal acceleration automatically.
+- **NVIDIA** — Uses CUDA when available (requires CUDA drivers).
+- **CPU** — Falls back to CPU if no GPU is detected.
+
+To manually control GPU layer offloading:
+
+```bash
+# Offload all layers to GPU
+export GPU_LAYERS_OVERRIDE=99
+
+# Force CPU-only inference
+export GPU_LAYERS_OVERRIDE=0
+```
+
+## Context Window
+
+The default context size is 8192 tokens. You can increase it for models that support larger contexts:
+
+```bash
+export MAX_CONTEXT_SIZE=32768
+```
+
+Larger context windows require more memory. Ensure your system has sufficient RAM/VRAM.

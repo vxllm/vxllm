@@ -1,0 +1,81 @@
+---
+title: API Overview
+description: VxLLM exposes an OpenAI-compatible REST API on port 11500.
+---
+
+# API Overview
+
+VxLLM provides a fully OpenAI-compatible REST API. Any client or SDK that works with the OpenAI API can be pointed at VxLLM with minimal changes.
+
+## Base URL
+
+```
+http://localhost:11500
+```
+
+When deployed remotely, replace `localhost` with your server's hostname or IP address.
+
+## Authentication
+
+**Local mode** (default, `HOST=127.0.0.1`): No authentication required. All requests are accepted.
+
+**Server mode** (`HOST=0.0.0.0`): API key required via the `Authorization` header:
+
+```
+Authorization: Bearer vx-your-api-key-here
+```
+
+## Request Format
+
+All endpoints accept JSON request bodies with `Content-Type: application/json`.
+
+## Response Format
+
+Responses follow the OpenAI API format. Successful responses return the requested data. Errors return:
+
+```json
+{
+  "error": {
+    "message": "Description of the error",
+    "type": "error_type",
+    "code": "error_code",
+    "param": null
+  }
+}
+```
+
+Error types include:
+- `invalid_request_error` (400)
+- `authentication_error` (401)
+- `not_found_error` (404)
+- `rate_limit_error` (429)
+- `server_error` (500)
+
+## Available Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/v1/chat/completions` | Chat completions (streaming and non-streaming) |
+| `POST` | `/v1/completions` | Text completions |
+| `POST` | `/v1/embeddings` | Text embeddings |
+| `GET` | `/v1/models` | List loaded models |
+| `POST` | `/v1/audio/transcriptions` | Speech-to-text transcription |
+| `POST` | `/v1/audio/speech` | Text-to-speech synthesis |
+| `POST` | `/api/models/pull` | Download a model from HuggingFace |
+| `GET` | `/health` | Server health check |
+
+## Streaming
+
+Chat completions and text completions support Server-Sent Events (SSE) streaming. Set `"stream": true` in the request body:
+
+```bash
+curl http://localhost:11500/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5:7b",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "stream": true
+  }'
+```
+
+Streamed responses are sent as `data: {json}\n\n` lines, terminated with `data: [DONE]\n\n`.

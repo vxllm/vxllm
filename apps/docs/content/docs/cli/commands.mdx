@@ -1,0 +1,186 @@
+---
+title: CLI Commands
+description: All VxLLM CLI commands with flags and usage examples.
+---
+
+# CLI Commands
+
+The VxLLM CLI is built with [citty](https://github.com/unjs/citty) and provides commands for managing models and running the server.
+
+## Install
+
+```bash
+bun add -g vxllm
+```
+
+## Usage
+
+```bash
+vxllm <command> [options]
+```
+
+## Commands
+
+### `vxllm serve`
+
+Start the VxLLM server.
+
+```bash
+vxllm serve [options]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--port`, `-p` | `11500` | Server port |
+| `--host`, `-H` | `127.0.0.1` | Bind address (`0.0.0.0` for network access) |
+| `--model`, `-m` | — | Auto-load a model on startup |
+
+**Examples:**
+
+```bash
+# Start on default port
+vxllm serve
+
+# Start on custom port with a model pre-loaded
+vxllm serve --port 8080 --model qwen2.5:7b
+
+# Start in server mode (accessible from network)
+vxllm serve --host 0.0.0.0
+```
+
+### `vxllm pull`
+
+Download a model from HuggingFace.
+
+```bash
+vxllm pull <model>
+```
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `model` | Yes | Model identifier (e.g. `qwen2.5:7b`) |
+
+**Examples:**
+
+```bash
+# Pull a specific model
+vxllm pull qwen2.5:7b
+
+# Pull a larger model
+vxllm pull llama3.1:8b
+```
+
+The command shows a progress bar during download. Models are saved to `~/.vxllm/models/` by default (configurable via `MODELS_DIR`).
+
+### `vxllm run`
+
+Send a one-shot prompt to a model. Starts the server temporarily if not already running.
+
+```bash
+vxllm run <model> [prompt]
+```
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `model` | Yes | Model identifier |
+| `prompt` | No | Text prompt (reads from stdin if omitted) |
+
+**Examples:**
+
+```bash
+# One-shot prompt
+vxllm run qwen2.5:7b "Explain recursion in 3 sentences"
+
+# Pipe input from a file
+cat question.txt | vxllm run qwen2.5:7b
+
+# Interactive (reads from stdin)
+vxllm run qwen2.5:7b
+```
+
+### `vxllm list`
+
+List all downloaded models.
+
+```bash
+vxllm list
+```
+
+**Output:**
+
+```
+NAME              SIZE      MODIFIED
+qwen2.5:7b       4.5 GB    2 hours ago
+llama3.1:8b       5.0 GB    1 day ago
+phi-3:mini        2.3 GB    3 days ago
+```
+
+### `vxllm ps`
+
+Show currently loaded (active) models.
+
+```bash
+vxllm ps
+```
+
+**Output:**
+
+```
+NAME              SIZE      LOADED        VRAM
+qwen2.5:7b       4.5 GB    5 min ago     3.2 GB (Metal)
+```
+
+This shows models that are currently loaded in memory and ready for inference.
+
+### `vxllm rm`
+
+Remove a downloaded model.
+
+```bash
+vxllm rm <model>
+```
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `model` | Yes | Model identifier to remove |
+
+**Examples:**
+
+```bash
+# Remove a specific model
+vxllm rm phi-3:mini
+
+# Remove with confirmation prompt
+vxllm rm qwen2.5:7b
+```
+
+This deletes the GGUF file from the models directory and removes the model from the local registry.
+
+### `vxllm --help`
+
+Show help information.
+
+```bash
+vxllm --help
+vxllm <command> --help
+```
+
+### `vxllm --version`
+
+Show the installed version.
+
+```bash
+vxllm --version
+```
+
+## Environment Variables
+
+The CLI respects the same environment variables as the server. You can set them in your shell profile or a `.env` file:
+
+```bash
+export MODELS_DIR=/path/to/models
+export PORT=8080
+export GPU_LAYERS_OVERRIDE=99
+```
+
+See [Configuration](/docs/configuration) for the full list of environment variables.

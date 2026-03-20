@@ -1,0 +1,115 @@
+---
+title: Models
+description: Model listing and management endpoints.
+---
+
+# Models
+
+VxLLM provides endpoints to list available models and manage model downloads.
+
+## List Models
+
+```
+GET /v1/models
+```
+
+Returns a list of models currently available on the server. Compatible with the OpenAI Models API.
+
+### curl
+
+```bash
+curl http://localhost:11500/v1/models
+```
+
+### Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "qwen2.5:7b",
+      "object": "model",
+      "created": 1711234567,
+      "owned_by": "vxllm"
+    },
+    {
+      "id": "llama3.1:8b",
+      "object": "model",
+      "created": 1711234500,
+      "owned_by": "vxllm"
+    }
+  ]
+}
+```
+
+## Pull (Download) a Model
+
+```
+POST /api/models/pull
+```
+
+Downloads a model from HuggingFace to the local model directory. Returns a streaming progress response.
+
+### Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Model identifier (e.g. `qwen2.5:7b`) |
+
+### curl
+
+```bash
+curl http://localhost:11500/api/models/pull \
+  -H "Content-Type: application/json" \
+  -d '{"name": "qwen2.5:7b"}'
+```
+
+### Response (Streaming)
+
+The response streams progress updates as newline-delimited JSON:
+
+```json
+{"status": "downloading", "name": "qwen2.5:7b", "progress": 0.0}
+{"status": "downloading", "name": "qwen2.5:7b", "progress": 0.25}
+{"status": "downloading", "name": "qwen2.5:7b", "progress": 0.50}
+{"status": "downloading", "name": "qwen2.5:7b", "progress": 0.75}
+{"status": "downloading", "name": "qwen2.5:7b", "progress": 1.0}
+{"status": "complete", "name": "qwen2.5:7b"}
+```
+
+### Python
+
+```python
+import requests
+import json
+
+response = requests.post(
+    "http://localhost:11500/api/models/pull",
+    json={"name": "qwen2.5:7b"},
+    stream=True
+)
+
+for line in response.iter_lines():
+    if line:
+        progress = json.loads(line)
+        if progress["status"] == "downloading":
+            pct = progress["progress"] * 100
+            print(f"Downloading: {pct:.0f}%")
+        elif progress["status"] == "complete":
+            print("Download complete!")
+```
+
+## Available Models
+
+VxLLM maintains a curated model registry in `models.json`. Popular models include:
+
+| Model | Parameters | Size | Use Case |
+|-------|-----------|------|----------|
+| `qwen2.5:7b` | 7B | ~4.5 GB | General purpose, fast |
+| `qwen2.5:14b` | 14B | ~9 GB | Higher quality, moderate speed |
+| `llama3.1:8b` | 8B | ~5 GB | General purpose |
+| `mistral:7b` | 7B | ~4.5 GB | Fast, good for code |
+| `phi-3:mini` | 3.8B | ~2.3 GB | Lightweight, edge devices |
+
+The actual available models depend on what has been added to the registry and downloaded to your server.

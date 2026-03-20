@@ -1,0 +1,175 @@
+---
+title: Docker Deployment
+description: Deploy VxLLM with Docker Compose — server and voice sidecar.
+---
+
+# Docker Deployment
+
+VxLLM provides Docker images for the server and voice sidecar, orchestrated with Docker Compose.
+
+## Quick Start
+
+```bash
+git clone https://github.com/DataHase/vxllm.git
+cd vxllm
+
+# Configure environment
+cp docker/.env.example docker/.env
+
+# Start everything
+docker compose -f docker/docker-compose.yml up -d
+```
+
+The server will be available at `http://localhost:11500`.
+
+## Architecture
+
+Docker Compose starts two services:
+
+| Service | Port | Description |
+|---------|------|-------------|
+| `server` | 11500 | Bun/Hono server with LLM inference |
+| `voice` | 11501 | Python sidecar for STT/TTS |
+
+Both services share a `vxllm-data` Docker volume for the SQLite database and downloaded models.
+
+## Configuration
+
+Edit `docker/.env` to customize your deployment:
+
+```bash
+# API key for authentication (required for remote access)
+API_KEY=vx-your-secret-key-here
+
+# Server port
+PORT=11500
+
+# Voice sidecar port
+VOICE_PORT=11501
+
+# Allowed CORS origins
+CORS_ORIGINS=https://your-frontend.example.com
+```
+
+### Authentication
+
+When running in Docker, the server binds to `0.0.0.0`, which enables authentication. Set an `API_KEY` in your `.env` file:
+
+```bash
+API_KEY=vx-your-secret-key-here
+```
+
+Clients must include this key in requests:
+
+```bash
+curl http://your-server:11500/v1/chat/completions \
+  -H "Authorization: Bearer vx-your-secret-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "qwen2.5:7b", "messages": [{"role": "user", "content": "Hello"}]}'
+```
+
+## Pulling Models
+
+After starting the containers, pull a model:
+
+```bash
+curl http://localhost:11500/api/models/pull \
+  -H "Content-Type: application/json" \
+  -d '{"name": "qwen2.5:7b"}'
+```
+
+Models are stored in the shared Docker volume and persist across container restarts.
+
+## Docker Compose File
+
+The full `docker/docker-compose.yml`:
+
+```yaml
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server
+    ports:
+      - "${PORT:-11500}:11500"
+    environment:
+      HOST: "0.0.0.0"
+      VOICE_SIDECAR_URL: "http://voice:11501"
+      DATABASE_URL: "file:/data/local.db"
+      MODELS_DIR: "/data/models"
+      API_KEY: "${API_KEY:-}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-*}"
+    volumes:
+      - vxllm-data:/data
+    depends_on:
+      - voice
+
+  voice:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.voice
+    ports:
+      - "${VOICE_PORT:-11501}:11501"
+    environment:
+      VOICE_SIDECAR_HOST: "0.0.0.0"
+      MODELS_DIR: "/data/models"
+    volumes:
+      - vxllm-data:/data
+
+volumes:
+  vxllm-data:
+```
+
+## GPU Support
+
+### NVIDIA GPU
+
+To use NVIDIA GPU acceleration in Docker, install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) and add GPU configuration to the server service:
+
+```yaml
+services:
+  server:
+    # ... existing config ...
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+```
+
+### Apple Silicon
+
+Docker on Apple Silicon does not support Metal GPU passthrough. For GPU acceleration on macOS, run VxLLM natively (CLI or desktop app) instead of Docker.
+
+## Data Management
+
+### Volumes
+
+The `vxllm-data` volume stores:
+- SQLite database (`/data/local.db`)
+- Downloaded models (`/data/models/`)
+
+### Backup
+
+```bash
+# Create a backup of the data volume
+docker run --rm -v vxllm-data:/data -v $(pwd):/backup \
+  alpine tar czf /backup/vxllm-backup.tar.gz -C /data .
+```
+
+### Reset
+
+```bash
+# Stop containers and remove data
+docker compose -f docker/docker-compose.yml down -v
+```
+
+## Production Recommendations
+
+- **Set an API key** — Always set `API_KEY` when exposing VxLLM to the network.
+- **Restrict CORS** — Set `CORS_ORIGINS` to your frontend domain instead of `*`.
+- **Use a reverse proxy** — Place nginx or Caddy in front for TLS termination.
+- **Monitor resources** — LLM inference is memory-intensive. Monitor RAM and VRAM usage.
+- **Persistent storage** — Use a named volume (default) or a bind mount for model persistence.

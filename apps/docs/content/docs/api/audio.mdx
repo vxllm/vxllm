@@ -1,0 +1,128 @@
+---
+title: Audio
+description: Speech-to-text transcription and text-to-speech synthesis endpoints.
+---
+
+# Audio
+
+VxLLM provides audio endpoints for speech-to-text (STT) and text-to-speech (TTS) via the Python voice sidecar. These endpoints are proxied from the main server to the voice sidecar running on port 11501.
+
+The voice sidecar must be running for these endpoints to work. See [Voice Setup](/docs/voice/setup) for installation instructions.
+
+## Transcriptions (Speech-to-Text)
+
+```
+POST /v1/audio/transcriptions
+```
+
+Transcribes audio to text using faster-whisper. Compatible with the OpenAI Audio Transcriptions API.
+
+### Request Body (multipart/form-data)
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file` | file | Yes | — | Audio file (wav, mp3, m4a, webm, ogg) |
+| `model` | string | No | `whisper-large-v3` | Whisper model to use |
+| `language` | string | No | — | Language code (e.g. `en`, `fr`) for faster transcription |
+
+### curl
+
+```bash
+curl http://localhost:11500/v1/audio/transcriptions \
+  -F "file=@recording.wav" \
+  -F "model=whisper-large-v3"
+```
+
+### Response
+
+```json
+{
+  "text": "Hello, this is a test of the speech recognition system."
+}
+```
+
+### Python (OpenAI SDK)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:11500/v1",
+    api_key="not-needed"
+)
+
+with open("recording.wav", "rb") as audio_file:
+    transcript = client.audio.transcriptions.create(
+        model="whisper-large-v3",
+        file=audio_file
+    )
+
+print(transcript.text)
+```
+
+## Speech (Text-to-Speech)
+
+```
+POST /v1/audio/speech
+```
+
+Converts text to speech using Kokoro TTS. Compatible with the OpenAI Audio Speech API.
+
+### Request Body
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `input` | string | Yes | — | Text to convert to speech |
+| `model` | string | No | `kokoro` | TTS model to use |
+| `voice` | string | No | `af_heart` | Voice profile ID |
+
+### curl
+
+```bash
+curl http://localhost:11500/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "Hello! Welcome to VxLLM.",
+    "model": "kokoro",
+    "voice": "af_heart"
+  }' \
+  --output speech.wav
+```
+
+### Response
+
+Returns raw audio bytes (`audio/wav` content type). Save directly to a file.
+
+### Python (OpenAI SDK)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:11500/v1",
+    api_key="not-needed"
+)
+
+response = client.audio.speech.create(
+    model="kokoro",
+    voice="af_heart",
+    input="Hello! Welcome to VxLLM."
+)
+
+response.stream_to_file("speech.wav")
+```
+
+## Real-Time Voice (WebSocket)
+
+For real-time voice interaction, VxLLM provides a WebSocket endpoint:
+
+```
+WS ws://localhost:11500/ws/stream
+```
+
+This WebSocket proxies to the voice sidecar and supports:
+- Real-time voice activity detection (VAD)
+- Streaming speech-to-text transcription
+- Continuous conversation flow
+
+See the [Voice Setup](/docs/voice/setup) guide for more details on configuring real-time voice.

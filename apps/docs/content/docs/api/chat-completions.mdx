@@ -1,0 +1,156 @@
+---
+title: Chat Completions
+description: POST /v1/chat/completions — Generate chat responses from a loaded model.
+---
+
+# Chat Completions
+
+```
+POST /v1/chat/completions
+```
+
+Creates a chat completion for the given messages. Compatible with the OpenAI Chat Completions API.
+
+## Request Body
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `model` | string | Yes | — | Model ID (e.g. `qwen2.5:7b`) |
+| `messages` | array | Yes | — | Array of message objects |
+| `stream` | boolean | No | `false` | Enable SSE streaming |
+| `temperature` | number | No | `0.7` | Sampling temperature (0-2) |
+| `top_p` | number | No | `1.0` | Nucleus sampling threshold |
+| `max_tokens` | number | No | `2048` | Maximum tokens to generate |
+| `stop` | string or array | No | — | Stop sequences |
+| `presence_penalty` | number | No | `0` | Presence penalty (-2 to 2) |
+| `frequency_penalty` | number | No | `0` | Frequency penalty (-2 to 2) |
+
+### Message Object
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `role` | string | Yes | `system`, `user`, or `assistant` |
+| `content` | string | Yes | Message content |
+
+## Examples
+
+### curl
+
+```bash
+curl http://localhost:11500/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5:7b",
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "What is the capital of France?"}
+    ],
+    "temperature": 0.7,
+    "max_tokens": 256
+  }'
+```
+
+### Python (OpenAI SDK)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:11500/v1",
+    api_key="not-needed"
+)
+
+# Non-streaming
+response = client.chat.completions.create(
+    model="qwen2.5:7b",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is the capital of France?"}
+    ],
+    temperature=0.7,
+    max_tokens=256
+)
+
+print(response.choices[0].message.content)
+```
+
+### Python (Streaming)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:11500/v1",
+    api_key="not-needed"
+)
+
+stream = client.chat.completions.create(
+    model="qwen2.5:7b",
+    messages=[
+        {"role": "user", "content": "Write a haiku about programming."}
+    ],
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+```
+
+### JavaScript/TypeScript
+
+```typescript
+const response = await fetch("http://localhost:11500/v1/chat/completions", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    model: "qwen2.5:7b",
+    messages: [
+      { role: "user", content: "Hello!" }
+    ]
+  })
+});
+
+const data = await response.json();
+console.log(data.choices[0].message.content);
+```
+
+## Response
+
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1711234567,
+  "model": "qwen2.5:7b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The capital of France is Paris."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 8,
+    "total_tokens": 33
+  }
+}
+```
+
+## Streaming Response
+
+When `stream: true`, the response is a series of SSE events:
+
+```
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1711234567,"model":"qwen2.5:7b","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1711234567,"model":"qwen2.5:7b","choices":[{"index":0,"delta":{"content":"The"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1711234567,"model":"qwen2.5:7b","choices":[{"index":0,"delta":{"content":" capital"},"finish_reason":null}]}
+
+data: [DONE]
+```

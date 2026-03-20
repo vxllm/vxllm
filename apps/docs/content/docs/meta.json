@@ -1,0 +1,14 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "installation",
+    "quickstart",
+    "configuration",
+    "---",
+    "api",
+    "cli",
+    "voice",
+    "deployment"
+  ]
+}

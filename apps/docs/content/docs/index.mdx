@@ -1,13 +1,43 @@
 ---
-title: Hello World
-description: Your first document
+title: Getting Started
+description: Introduction to VxLLM — an open-source, self-hostable AI model server.
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+# Getting Started with VxLLM
 
-## What is Next?
+VxLLM is an open-source, self-hostable AI model server that runs LLM, STT (Speech-to-Text), and TTS (Text-to-Speech) models locally or on a remote server. It exposes a fully OpenAI-compatible REST API, provides real-time voice I/O via WebSocket, and includes both a desktop app and a CLI.
+
+## Key Features
+
+- **Local LLM Inference** — Run GGUF models in-process via node-llama-cpp with automatic Metal, CUDA, and CPU detection.
+- **OpenAI-Compatible API** — Drop-in replacement for OpenAI endpoints. Works with any OpenAI SDK or client.
+- **Voice Pipeline** — Speech-to-text (faster-whisper), text-to-speech (Kokoro), and voice activity detection (silero-vad).
+- **Desktop App** — Tauri 2 native application with system tray, chat UI, and model management.
+- **CLI** — Developer-friendly commands: `serve`, `pull`, `run`, `list`, `ps`, `rm`.
+- **Docker Ready** — Single `docker compose up` to deploy server and voice sidecar.
+
+## Quick Links
 
 <Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.dev" />
+  <Card title="Installation" href="/docs/installation">
+    Install VxLLM via CLI, desktop app, or Docker.
+  </Card>
+  <Card title="Quickstart" href="/docs/quickstart">
+    Go from zero to chatting with a model in 5 minutes.
+  </Card>
+  <Card title="API Reference" href="/docs/api">
+    Full OpenAI-compatible API documentation.
+  </Card>
+  <Card title="CLI Commands" href="/docs/cli/commands">
+    All CLI commands with flags and examples.
+  </Card>
 </Cards>
+
+## Architecture Overview
+
+VxLLM runs as two processes:
+
+1. **Bun/Hono Server** (port 11500) — Handles LLM inference, OpenAI-compatible API, model management, and the web dashboard.
+2. **Python Voice Sidecar** (port 11501, optional) — Handles STT, TTS, and real-time voice streaming via WebSocket.
+
+The desktop app (Tauri 2) spawns both processes and provides a native UI. In server mode, both can be deployed via Docker.

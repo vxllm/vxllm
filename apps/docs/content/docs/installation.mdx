@@ -1,0 +1,73 @@
+---
+title: Installation
+description: Three ways to install VxLLM — CLI, desktop app, or Docker.
+---
+
+# Installation
+
+VxLLM can be installed in three ways depending on your use case.
+
+## CLI (Recommended for Developers)
+
+Install the VxLLM CLI globally using Bun:
+
+```bash
+bun add -g vxllm
+```
+
+Verify the installation:
+
+```bash
+vxllm --version
+```
+
+### Requirements
+
+- [Bun](https://bun.sh/) v1.1 or later
+- macOS (Apple Silicon or Intel), Linux, or Windows
+- 8 GB RAM minimum (16 GB recommended for 7B models)
+
+## Desktop App
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/DataHase/vxllm/releases):
+
+| Platform | Download |
+|----------|----------|
+| macOS (Apple Silicon) | `VxLLM_aarch64.dmg` |
+| macOS (Intel) | `VxLLM_x64.dmg` |
+| Windows | `VxLLM_x64_en-US.msi` |
+| Linux (AppImage) | `VxLLM_amd64.AppImage` |
+| Linux (deb) | `VxLLM_amd64.deb` |
+
+The desktop app bundles the server and voice sidecar. No additional setup required.
+
+## Docker
+
+For server deployment, use Docker Compose:
+
+```bash
+git clone https://github.com/DataHase/vxllm.git
+cd vxllm
+
+# Copy and configure environment
+cp docker/.env.example docker/.env
+
+# Start server and voice sidecar
+docker compose -f docker/docker-compose.yml up -d
+```
+
+The server will be available at `http://localhost:11500`.
+
+See [Docker Deployment](/docs/deployment/docker) for full configuration options.
+
+## Building from Source
+
+```bash
+git clone https://github.com/DataHase/vxllm.git
+cd vxllm
+bun install
+bun run build
+bun run dev:server
+```
+
+This starts the development server on `http://localhost:11500`.

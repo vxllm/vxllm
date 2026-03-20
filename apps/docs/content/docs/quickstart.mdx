@@ -1,0 +1,95 @@
+---
+title: Quickstart
+description: Go from zero to chatting with a local AI model in under 5 minutes.
+---
+
+# Quickstart
+
+This guide takes you from installation to chatting with a local AI model in under 5 minutes.
+
+## Step 1: Install VxLLM
+
+```bash
+bun add -g vxllm
+```
+
+## Step 2: Pull a Model
+
+Download a model from the curated registry. We recommend starting with Qwen 2.5 (7B parameters):
+
+```bash
+vxllm pull qwen2.5:7b
+```
+
+This downloads the GGUF model file (~4.5 GB) to `~/.vxllm/models/`. You can list available models with:
+
+```bash
+vxllm list
+```
+
+## Step 3: Start the Server
+
+```bash
+vxllm serve
+```
+
+The server starts on `http://localhost:11500` with the web dashboard accessible in your browser.
+
+## Step 4: Chat
+
+### Using the Web UI
+
+Open `http://localhost:11500` in your browser. Select your model and start chatting.
+
+### Using curl
+
+```bash
+curl http://localhost:11500/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5:7b",
+    "messages": [
+      {"role": "user", "content": "Hello! What can you do?"}
+    ]
+  }'
+```
+
+### Using Python (OpenAI SDK)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:11500/v1",
+    api_key="not-needed"  # No auth required on localhost
+)
+
+response = client.chat.completions.create(
+    model="qwen2.5:7b",
+    messages=[
+        {"role": "user", "content": "Hello! What can you do?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Using the CLI directly
+
+```bash
+vxllm run qwen2.5:7b "Explain quantum computing in one paragraph"
+```
+
+## Step 5: Explore
+
+- **Stream responses** — Add `"stream": true` to your API requests for real-time token streaming.
+- **Embeddings** — Use `POST /v1/embeddings` for text embeddings.
+- **Voice** — Set up the [voice sidecar](/docs/voice/setup) for speech-to-text and text-to-speech.
+- **Multiple models** — Pull additional models and switch between them on the fly.
+
+## Next Steps
+
+- [Configuration](/docs/configuration) — Customize ports, GPU layers, context size, and more.
+- [API Reference](/docs/api) — Full documentation of all endpoints.
+- [CLI Commands](/docs/cli/commands) — All available CLI commands.
+- [Docker Deployment](/docs/deployment/docker) — Deploy VxLLM on a server.

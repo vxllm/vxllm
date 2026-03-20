@@ -1,0 +1,145 @@
+---
+title: Voice Setup
+description: Install and configure the VxLLM voice sidecar for speech-to-text and text-to-speech.
+---
+
+# Voice Setup
+
+VxLLM's voice pipeline runs as a separate Python sidecar process. It handles:
+
+- **Speech-to-Text (STT)** — faster-whisper for high-speed transcription
+- **Text-to-Speech (TTS)** — Kokoro-82M for natural-sounding speech synthesis
+- **Voice Activity Detection (VAD)** — silero-vad for real-time voice detection
+- **Real-time streaming** — WebSocket endpoint for continuous voice interaction
+
+## Requirements
+
+- Python 3.11 or later
+- 4 GB RAM minimum (8 GB recommended)
+- GPU recommended for real-time transcription (CPU works but is slower)
+
+## Installation
+
+### Option 1: Automatic (Desktop App)
+
+The Tauri desktop app automatically downloads and manages the voice sidecar. No manual setup needed. Voice models are downloaded on first use.
+
+### Option 2: Manual Setup
+
+Navigate to the voice sidecar directory and install dependencies:
+
+```bash
+cd sidecar/voice
+
+# Install uv (Python package manager)
+pip install uv
+
+# Install dependencies
+uv sync
+
+# Start the voice sidecar
+uv run uvicorn app.main:app --host 127.0.0.1 --port 11501
+```
+
+The sidecar will start on `http://localhost:11501`.
+
+### Option 3: Docker
+
+The Docker Compose setup includes the voice sidecar automatically:
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+See [Docker Deployment](/docs/deployment/docker) for details.
+
+## Configuration
+
+The voice sidecar is configured via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VOICE_SIDECAR_HOST` | `127.0.0.1` | Bind address |
+| `VOICE_SIDECAR_PORT` | `11501` | Sidecar port |
+| `MODELS_DIR` | `~/.vxllm/models` | Directory for voice model files |
+
+The main VxLLM server connects to the sidecar via the `VOICE_SIDECAR_URL` environment variable (default: `http://localhost:11501`).
+
+## Voice Models
+
+On first use, the sidecar downloads the required voice models:
+
+| Model | Size | Purpose |
+|-------|------|---------|
+| faster-whisper (large-v3) | ~3 GB | Speech-to-text transcription |
+| Kokoro-82M | ~330 MB | Text-to-speech synthesis |
+| silero-vad | ~2 MB | Voice activity detection |
+
+Models are cached in the `MODELS_DIR` directory.
+
+## API Endpoints
+
+The voice sidecar exposes these endpoints (proxied through the main server):
+
+### Transcription
+
+```bash
+curl http://localhost:11500/v1/audio/transcriptions \
+  -F "file=@recording.wav" \
+  -F "model=whisper-large-v3"
+```
+
+### Speech Synthesis
+
+```bash
+curl http://localhost:11500/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Hello world", "voice": "af_heart"}' \
+  --output speech.wav
+```
+
+### Real-Time WebSocket
+
+Connect to `ws://localhost:11500/ws/stream` for real-time voice interaction:
+
+```javascript
+const ws = new WebSocket("ws://localhost:11500/ws/stream");
+
+// Send audio chunks as ArrayBuffer
+ws.send(audioChunk);
+
+// Receive transcription results
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === "transcript") {
+    console.log("Transcribed:", data.text);
+  }
+};
+```
+
+The WebSocket endpoint performs continuous VAD + STT, sending transcription results as they become available.
+
+## Troubleshooting
+
+### Voice sidecar not starting
+
+Ensure Python 3.11+ is installed and `uv` is available:
+
+```bash
+python3 --version
+uv --version
+```
+
+### Slow transcription
+
+If transcription is slow, ensure GPU acceleration is available. For NVIDIA GPUs, install CUDA:
+
+```bash
+pip install ctranslate2[cuda]
+```
+
+On macOS with Apple Silicon, faster-whisper uses CoreML acceleration automatically.
+
+### Models not downloading
+
+Check that the `MODELS_DIR` directory is writable and has sufficient disk space (~4 GB for all voice models).

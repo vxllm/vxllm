@@ -1,0 +1,110 @@
+---
+title: Embeddings
+description: POST /v1/embeddings — Generate text embeddings from a loaded model.
+---
+
+# Embeddings
+
+```
+POST /v1/embeddings
+```
+
+Creates embedding vectors for the given input text. Compatible with the OpenAI Embeddings API.
+
+## Request Body
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `model` | string | Yes | — | Model ID (must support embeddings) |
+| `input` | string or array | Yes | — | Text to embed (string or array of strings) |
+
+## Examples
+
+### curl
+
+```bash
+curl http://localhost:11500/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5:7b",
+    "input": "The quick brown fox jumps over the lazy dog."
+  }'
+```
+
+### curl (Batch)
+
+```bash
+curl http://localhost:11500/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5:7b",
+    "input": [
+      "First sentence to embed.",
+      "Second sentence to embed.",
+      "Third sentence to embed."
+    ]
+  }'
+```
+
+### Python (OpenAI SDK)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:11500/v1",
+    api_key="not-needed"
+)
+
+response = client.embeddings.create(
+    model="qwen2.5:7b",
+    input="The quick brown fox jumps over the lazy dog."
+)
+
+embedding = response.data[0].embedding
+print(f"Embedding dimension: {len(embedding)}")
+print(f"First 5 values: {embedding[:5]}")
+```
+
+### JavaScript/TypeScript
+
+```typescript
+const response = await fetch("http://localhost:11500/v1/embeddings", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    model: "qwen2.5:7b",
+    input: "The quick brown fox jumps over the lazy dog."
+  })
+});
+
+const data = await response.json();
+console.log(`Dimension: ${data.data[0].embedding.length}`);
+```
+
+## Response
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [0.0023, -0.0091, 0.0152, ...]
+    }
+  ],
+  "model": "qwen2.5:7b",
+  "usage": {
+    "prompt_tokens": 10,
+    "total_tokens": 10
+  }
+}
+```
+
+## Use Cases
+
+- **Semantic search** — Embed documents and queries, then find nearest neighbors.
+- **Clustering** — Group similar texts by embedding distance.
+- **RAG (Retrieval Augmented Generation)** — Embed knowledge base chunks for context retrieval.
+- **Classification** — Use embeddings as features for downstream classifiers.
