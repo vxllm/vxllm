@@ -1,5 +1,10 @@
 # VxLLM
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Bun](https://img.shields.io/badge/Bun-1.3-f9f1e1.svg)](https://bun.sh)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 > Open-source local AI server with voice — run LLMs, STT, and TTS locally with an OpenAI-compatible API.
 
 VxLLM is a unified, self-hostable model server that runs LLM, Speech-to-Text, and Text-to-Speech models on your hardware. It exposes a fully OpenAI-compatible REST API, provides real-time voice I/O via WebSocket, and includes a Tauri 2 desktop app and a developer CLI.
@@ -176,6 +181,24 @@ Full project documentation lives in `docs/project/`:
 | `VOICE_SIDECAR_URL` | `http://localhost:11501` | Voice sidecar URL |
 | `API_KEY` | — | Server mode auth key |
 
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Quick Contribution: Add a Model
+
+The easiest way to contribute is adding models to `models.json`. See the [contributing guide](CONTRIBUTING.md#contributing-to-modelsjson) for details.
+
+## Community
+
+- [GitHub Issues](https://github.com/DataHase/vxllm/issues) — Bug reports
+- [GitHub Discussions](https://github.com/DataHase/vxllm/discussions) — Questions & ideas
+- [Contributing Guide](CONTRIBUTING.md) — How to contribute
+- [Code of Conduct](CODE_OF_CONDUCT.md) — Community standards
+- [Security Policy](SECURITY.md) — Reporting vulnerabilities
+
 ## License
 
-MIT
+VxLLM is open-source software licensed under the [MIT License](LICENSE).
+
+Built by [DataHase](https://github.com/DataHase).
