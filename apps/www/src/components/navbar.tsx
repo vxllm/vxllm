@@ -32,7 +32,7 @@ export function Navbar() {
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         {/* Logo */}
         <a href="#" className="flex items-center gap-2">
-          <img src="/logo-no-bg.png" alt="VxLLM" className="h-6 w-6" />
+          <img src="/logo-no-bg.png" alt="VxLLM" className="h-8 w-8" />
           <span className="font-mono text-sm font-bold text-white">VxLLM</span>
         </a>
 

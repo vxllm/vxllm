@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimateOnScroll } from "./animate-on-scroll";
-import { ArrowDownToLine, ChevronRight } from "lucide-react";
+import { ArrowDownToLine } from "lucide-react";
 
 const RELEASES_URL = "https://github.com/datahase/vxllm/releases";
 
@@ -16,8 +16,13 @@ function AppleIcon({ className }: { className?: string }) {
 
 function LinuxIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 448 512" fill="currentColor" className={className}>
-      <path d="M220.8 123.3c1 .5 1.8 1.7 3 1.7 1.1 0 2.8-.4 2.9-1.5.2-1.4-1.9-2.3-3.2-2.9-1.7-.7-3.9-1-5.5-.1-.4.2-.8.7-.6 1.1.3 1.3 2.3 1.1 3.4 1.7zm-21.9 1.7c1.2 0 2-1.2 3-1.7 1.1-.6 3.1-.4 3.5-1.6.2-.4-.2-.9-.6-1.1-1.6-.9-3.8-.6-5.5.1-1.3.6-3.4 1.5-3.2 2.9.1 1 1.8 1.5 2.8 1.4zM420 403.8c-3.6-4-5.3-11.6-7.2-19.7-1.8-8.1-3.9-16.8-10.5-22.4-1.3-1.1-2.6-2.1-4-2.9-1.3-.8-2.7-1.5-4.1-2 9.2-27.3 5.6-54.5-3.7-79.1-11.4-30.1-31.3-56.4-46.5-74.4-17.1-21.5-33.7-41.9-33.4-72C311.1 85.4 315.7.1 234.8 0 132.4-.2 158 103.4 156.9 135.2c-1.7 23.4-6.4 41.8-22.5 64.7-18.9 22.5-45.5 58.8-58.1 96.7-6 17.9-8.8 36.1-6.2 53.3-6.5 5.8-11.4 14.7-16.6 20.2-4.2 4.3-10.3 5.9-17 8.3s-14 6-18.5 14.5c-2.1 3.9-2.8 8.1-2.8 12.4 0 3.9.6 7.9 1.2 11.8 1.2 8.1 2.6 15.2.8 20.8-5.2 14.4-5.9 24.4-2.2 31.7 3.8 7.1 11.4 10.4 20.7 12.8 17.7 4.5 42.3 4.6 52.7 15.2 17.2 17.3 35.4 17.9 48.2 12.6 6.9-2.6 12.4-7.2 16.2-13.2 2.4-3.7 4.2-8 5.4-12.7 1.4.4 2.9.7 4.4.8 3.3.3 6.7-.2 9.8-1.4 6.9-2.6 12.4-8.2 16-15.6 1.6 4.5 3.9 8.4 7 11.5 4.4 4.4 10.1 6.5 15.6 6.5 5.3-.1 10.5-2 14.3-5.8 4.2-4.2 6.6-10.4 7.3-18.3.6-7.5-.7-16.4-4.5-26.5 1.6-.5 3.1-1.1 4.5-1.9 5.3-2.9 8.2-7.6 10.2-12.7 2.3-5.7 3.6-12.2 5.1-18.5 1.5-6.2 3-12 5.8-16.2 3-4.6 8.6-8.4 16.7-8.4h.2c7.3.1 12.5 3.3 16.1 7.7 3.6 4.3 5.8 9.9 7.6 15.5 3.5 11.4 5.4 22.7 12.5 28.4 3.1 2.5 7.5 4.3 13.7 4.3 6.3 0 14.4-1.9 25.1-6.8 10.4-4.8 18-9.3 22.7-15.3 2.3-3 3.7-6.4 4.2-10.5.5-4.1-.1-8.8-1.8-14.5z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="8" r="5" />
+      <path d="M12 13v3" />
+      <path d="M7 21l2.5-5h5L17 21" />
+      <path d="M9.5 8.5c0-.5.5-1 1-1s1 .5 1 .5" />
+      <path d="M12.5 8.5c0-.5.5-1 1-1s1 .5 1 .5" />
+      <path d="M10 11c.5.5 1.5.5 2 .5s1.5 0 2-.5" />
     </svg>
   );
 }
@@ -36,21 +41,21 @@ const platforms = [
     Icon: AppleIcon,
     architectures: ["Apple Silicon", "Intel"],
     description: "Full Metal GPU acceleration. Native performance on Apple hardware.",
-    gradient: "from-white/[0.04] to-white/[0.01]",
+    hasArchSelector: true,
   },
   {
     name: "Linux",
     Icon: LinuxIcon,
     architectures: ["x86_64", "ARM64"],
     description: "CUDA, Vulkan, and CPU support. Docker image available.",
-    gradient: "from-white/[0.03] to-white/[0.01]",
+    hasArchSelector: false,
   },
   {
     name: "Windows",
     Icon: WindowsIcon,
     architectures: ["x86_64"],
     description: "CUDA and CPU inference. Native installer with system tray.",
-    gradient: "from-white/[0.03] to-white/[0.01]",
+    hasArchSelector: false,
   },
 ];
 
@@ -59,7 +64,6 @@ export function Download() {
 
   return (
     <section id="download" className="relative overflow-hidden bg-black px-6 py-28">
-      {/* Subtle grid background */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
@@ -82,13 +86,10 @@ export function Download() {
           </p>
         </AnimateOnScroll>
 
-        {/* Platform cards */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {platforms.map((platform, i) => (
             <AnimateOnScroll key={platform.name} delay={i * 120}>
-              <div
-                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-transparent p-8 transition-all duration-500 hover:border-[#2EFAA0]/20 hover:shadow-[0_0_60px_rgba(46,250,160,0.06)]"
-              >
+              <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-transparent p-8 transition-all duration-500 hover:border-[#2EFAA0]/20 hover:shadow-[0_0_60px_rgba(46,250,160,0.06)]">
                 {/* Hover glow */}
                 <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-[#2EFAA0]/0 transition-all duration-700 group-hover:bg-[#2EFAA0]/[0.04] group-hover:blur-3xl" />
 
@@ -121,44 +122,45 @@ export function Download() {
                   ))}
                 </div>
 
-                {/* Download button(s) */}
-                {platform.name === "macOS" ? (
-                  <div className="mt-auto flex flex-col gap-3">
-                    <select
-                      value={macArch}
-                      onChange={(e) => setMacArch(e.target.value)}
-                      className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-neutral-300 outline-none focus:border-[#2EFAA0]/30"
-                    >
-                      <option value="apple-silicon">Apple Silicon</option>
-                      <option value="intel">Intel</option>
-                    </select>
-                    <a
-                      href={RELEASES_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-[#2EFAA0]/30 hover:bg-[#2EFAA0]/[0.06] hover:text-[#2EFAA0]"
-                    >
-                      <ArrowDownToLine className="h-4 w-4" />
-                      Download for macOS
-                    </a>
-                  </div>
-                ) : (
+                {/* Download action — consistent across all cards */}
+                <div className="mt-auto flex flex-col gap-3">
+                  {/* Architecture radio buttons for macOS only */}
+                  {platform.hasArchSelector && (
+                    <div className="flex gap-2">
+                      {[
+                        { value: "apple-silicon", label: "Apple Silicon" },
+                        { value: "intel", label: "Intel" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setMacArch(opt.value)}
+                          className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all duration-200 ${
+                            macArch === opt.value
+                              ? "border-[#2EFAA0]/30 bg-[#2EFAA0]/[0.08] text-[#2EFAA0]"
+                              : "border-white/[0.06] bg-white/[0.02] text-neutral-500 hover:border-white/[0.12] hover:text-neutral-300"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Download button — same style for all */}
                   <a
                     href={RELEASES_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-auto flex items-center gap-2 text-sm font-medium text-neutral-400 transition-all duration-300 hover:text-[#2EFAA0] group-hover:text-[#2EFAA0]"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-[#2EFAA0]/30 hover:bg-[#2EFAA0]/[0.06] hover:text-[#2EFAA0]"
                   >
                     <ArrowDownToLine className="h-4 w-4" />
-                    <span>Download for {platform.name}</span>
-                    <ChevronRight className="h-3.5 w-3.5 translate-x-0 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100" />
+                    Download for {platform.name}
                   </a>
-                )}
+                </div>
               </div>
             </AnimateOnScroll>
           ))}
         </div>
-
       </div>
     </section>
   );

@@ -3,7 +3,7 @@ export function Footer() {
     <footer className="border-t border-neutral-800 bg-black px-6 py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 sm:flex-row">
         <div className="flex items-center gap-2">
-          <img src="/logo-no-bg.png" alt="VxLLM" className="h-5 w-5" />
+          <img src="/logo-no-bg.png" alt="VxLLM" className="h-7 w-7" />
           <span className="font-mono text-sm text-neutral-400">
             VxLLM &middot; MIT License
           </span>
