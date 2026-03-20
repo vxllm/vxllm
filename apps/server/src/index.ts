@@ -54,7 +54,7 @@ app.use("/*", async (c, next) => {
   });
 
   if (rpcResult.matched) {
-    return c.newResponse(rpcResult.response.body, rpcResult.response);
+    return c.newResponse(rpcResult.response.body as ReadableStream, rpcResult.response);
   }
 
   const apiResult = await apiHandler.handle(c.req.raw, {
@@ -63,7 +63,7 @@ app.use("/*", async (c, next) => {
   });
 
   if (apiResult.matched) {
-    return c.newResponse(apiResult.response.body, apiResult.response);
+    return c.newResponse(apiResult.response.body as ReadableStream, apiResult.response);
   }
 
   await next();
