@@ -1,10 +1,17 @@
+import { Hero } from "@/components/hero";
+import { Features } from "@/components/features";
+import { Comparison } from "@/components/comparison";
+import { InstallSection } from "@/components/install-section";
+import { Footer } from "@/components/footer";
+
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-4xl font-bold tracking-tight">VxLLM</h1>
-      <p className="text-lg opacity-70">
-        Open source local AI model server — coming soon.
-      </p>
+    <main className="min-h-screen">
+      <Hero />
+      <Features />
+      <Comparison />
+      <InstallSection />
+      <Footer />
     </main>
   );
 }
