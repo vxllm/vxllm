@@ -66,11 +66,70 @@ export function createChatRoute(deps: {
       content: m.content ?? "",
     }));
 
+    // ── Context truncation ─────────────────────────────────────────────
+    // Estimate total tokens and truncate if they exceed 80% of the
+    // model's context window. Uses the model's tokenizer when available,
+    // otherwise falls back to a rough chars/4 heuristic.
+    const contextSize = active.contextSize;
+    const contextBudget = Math.floor(contextSize * 0.8);
+    let contextTruncated = false;
+
+    // Estimate token counts per message
+    const messageLengths = aiMessages.map((m) => {
+      try {
+        return deps.modelManager.countTokens(active.sessionId, m.content);
+      } catch {
+        // Fallback: rough estimate of ~4 chars per token
+        return Math.ceil(m.content.length / 4);
+      }
+    });
+
+    const totalTokens = messageLengths.reduce((sum, len) => sum + len, 0);
+
+    let truncatedMessages = aiMessages;
+    if (totalTokens > contextBudget) {
+      contextTruncated = true;
+
+      // Preserve the system message (first message if role=system)
+      const systemMsg =
+        aiMessages.length > 0 && aiMessages[0]!.role === "system"
+          ? aiMessages[0]
+          : null;
+      const nonSystemMessages = systemMsg
+        ? aiMessages.slice(1)
+        : aiMessages;
+      const nonSystemLengths = systemMsg
+        ? messageLengths.slice(1)
+        : messageLengths;
+
+      const systemTokens = systemMsg ? messageLengths[0]! : 0;
+      let remainingBudget = contextBudget - systemTokens;
+
+      // Keep latest messages that fit within the remaining budget
+      const kept: typeof nonSystemMessages = [];
+      for (let i = nonSystemMessages.length - 1; i >= 0 && remainingBudget > 0; i--) {
+        const tokensNeeded = nonSystemLengths[i]!;
+        if (tokensNeeded <= remainingBudget) {
+          kept.unshift(nonSystemMessages[i]!);
+          remainingBudget -= tokensNeeded;
+        } else {
+          break;
+        }
+      }
+
+      truncatedMessages = systemMsg ? [systemMsg, ...kept] : kept;
+    }
+
     // Resolve conversation ID from header or generate a new one
     const conversationId =
       c.req.header("X-Conversation-Id") ?? crypto.randomUUID();
 
     const requestId = `chatcmpl-${crypto.randomUUID().slice(0, 8)}`;
+
+    // Set truncation header if context was reduced
+    if (contextTruncated) {
+      c.header("X-Context-Truncated", "true");
+    }
 
     if (request.stream) {
       // ── Streaming SSE response ──────────────────────────────────────────
@@ -79,7 +138,7 @@ export function createChatRoute(deps: {
 
         const result = streamText({
           model,
-          messages: aiMessages,
+          messages: truncatedMessages,
           maxOutputTokens: request.max_tokens ?? undefined,
           temperature: request.temperature ?? undefined,
           topP: request.top_p ?? undefined,
@@ -156,7 +215,7 @@ export function createChatRoute(deps: {
       // ── Non-streaming JSON response ─────────────────────────────────────
       const result = await generateText({
         model,
-        messages: aiMessages,
+        messages: truncatedMessages,
         maxOutputTokens: request.max_tokens ?? undefined,
         temperature: request.temperature ?? undefined,
         topP: request.top_p ?? undefined,
