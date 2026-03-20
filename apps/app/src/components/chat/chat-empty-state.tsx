@@ -1,6 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@vxllm/ui/components/button";
 import { Card, CardContent } from "@vxllm/ui/components/card";
-import { Cpu } from "lucide-react";
+import { Cpu, MenuIcon } from "lucide-react";
+
+import { useChatLayout } from "@/routes/chat/route";
 
 const EXAMPLE_PROMPTS = [
   {
@@ -23,6 +26,7 @@ const EXAMPLE_PROMPTS = [
 
 export function ChatEmptyState() {
   const navigate = useNavigate();
+  const { isMobile, openMobileSidebar } = useChatLayout();
 
   const handlePromptClick = (_prompt: string) => {
     // TODO: In future tasks, this will create a new conversation with this prompt
@@ -31,7 +35,19 @@ export function ChatEmptyState() {
   };
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-6 p-8">
+    <div className="relative flex h-full flex-col items-center justify-center gap-6 p-8">
+      {isMobile && (
+        <div className="absolute top-2 left-2">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={openMobileSidebar}
+          >
+            <MenuIcon className="size-4" />
+            <span className="sr-only">Open sidebar</span>
+          </Button>
+        </div>
+      )}
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
           <Cpu className="size-6 text-muted-foreground" />

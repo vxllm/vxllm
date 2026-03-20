@@ -16,13 +16,14 @@ import { Button } from "@vxllm/ui/components/button";
 import { Input } from "@vxllm/ui/components/input";
 import { ScrollArea } from "@vxllm/ui/components/scroll-area";
 import { useDebounce } from "@vxllm/ui/hooks/use-debounce";
+import { Skeleton } from "@vxllm/ui/components/skeleton";
 import { MessageSquarePlus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { groupConversationsByDate, truncateTitle } from "@/lib/chat";
 import { orpc } from "@/utils/orpc";
 
-export function ChatSidebar() {
+export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const navigate = useNavigate();
   const params = useParams({ strict: false });
   const activeConversationId = (params as { conversationId?: string })
@@ -67,7 +68,10 @@ export function ChatSidebar() {
         <Button
           variant="outline"
           className="w-full justify-start gap-2"
-          onClick={() => navigate({ to: "/chat" })}
+          onClick={() => {
+            navigate({ to: "/chat" });
+            onNavigate?.();
+          }}
         >
           <MessageSquarePlus className="size-4" />
           <span>New Chat</span>
@@ -88,8 +92,12 @@ export function ChatSidebar() {
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-1 px-2 pb-2">
           {conversationsQuery.isLoading ? (
-            <div className="px-2 py-8 text-center text-xs text-muted-foreground">
-              Loading...
+            <div className="flex flex-col gap-2 px-2 py-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-1 px-2 py-1.5">
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ))}
             </div>
           ) : conversations.length === 0 ? (
             <div className="px-2 py-8 text-center text-xs text-muted-foreground">
@@ -113,6 +121,7 @@ export function ChatSidebar() {
                       deleteConversation.mutate({ id: conversation.id })
                     }
                     isDeleting={deleteConversation.isPending}
+                    onNavigate={onNavigate}
                   />
                 ))}
               </div>
@@ -137,12 +146,14 @@ function ConversationItem({
   isActive,
   onDelete,
   isDeleting,
+  onNavigate,
 }: {
   id: string;
   title: string | null;
   isActive: boolean;
   onDelete: () => void;
   isDeleting: boolean;
+  onNavigate?: () => void;
 }) {
   return (
     <div
@@ -156,6 +167,7 @@ function ConversationItem({
         to="/chat/$conversationId"
         params={{ conversationId: id }}
         className="flex-1 truncate px-2 py-1.5 text-sm"
+        onClick={() => onNavigate?.()}
       >
         {truncateTitle(title)}
       </Link>
