@@ -1,3 +1,6 @@
+import "geist/font/sans.css";
+import "geist/font/mono.css";
+
 import { createORPCClient } from "@orpc/client";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import type { QueryClient } from "@tanstack/react-query";

@@ -26,6 +26,7 @@
     "@vxllm/env": "workspace:*",
     "@vxllm/ui": "workspace:*",
     "dotenv": "catalog:",
+    "geist": "^1.7.0",
     "libsql": "catalog:",
     "lucide-react": "catalog:",
     "next-themes": "catalog:",
