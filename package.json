@@ -35,6 +35,7 @@
     "dev:app": "turbo -F app dev",
     "dev:server": "turbo -F server dev",
     "dev:docs": "turbo -F docs dev",
+    "dev:www": "turbo -F www dev",
     "db:push": "turbo -F @vxllm/db db:push",
     "db:studio": "turbo -F @vxllm/db db:studio",
     "db:generate": "turbo -F @vxllm/db db:generate",
