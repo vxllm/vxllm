@@ -1,106 +1,180 @@
-# vxllm
+# VxLLM
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Router, Hono, ORPC, and more.
+> Open-source local AI server with voice — run LLMs, STT, and TTS locally with an OpenAI-compatible API.
 
-## Features
+VxLLM is a unified, self-hostable model server that runs LLM, Speech-to-Text, and Text-to-Speech models on your hardware. It exposes a fully OpenAI-compatible REST API, provides real-time voice I/O via WebSocket, and includes a Tauri 2 desktop app and a developer CLI.
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Router** - File-based routing with full type safety
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Hono** - Lightweight, performant server framework
-- **oRPC** - End-to-end type-safe APIs with OpenAPI integration
-- **Bun** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
-- **Tauri** - Build native desktop applications
-- **Turborepo** - Optimized monorepo build system
+## What Makes VxLLM Different
 
-## Getting Started
+| Feature | Ollama | LM Studio | VxLLM |
+|---------|--------|-----------|-------|
+| Open source | Yes | No | Yes |
+| Voice (TTS/STT) | No | No | Yes |
+| Real-time WebSocket voice | No | No | Yes |
+| Desktop GUI | No | Yes | Yes |
+| CLI | Yes | No | Yes |
+| Server/Cloud mode | Partial | No | Yes |
+| In-process inference | No (Go wrapper) | N/A | Yes (node-llama-cpp) |
 
-First, install the dependencies:
+## Quick Start
 
 ```bash
+# Install dependencies
 bun install
-```
 
-## Database Setup
-
-This project uses SQLite with Drizzle ORM.
-
-1. Start the local SQLite database (optional):
-
-```bash
-bun run db:local
-```
-
-2. Update your `.env` file in the `apps/server` directory with the appropriate connection details if needed.
-
-3. Apply the schema to your database:
-
-```bash
+# Push database schema
 bun run db:push
-```
 
-Then, run the development server:
-
-```bash
+# Start development server
 bun run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+The web app runs at [http://localhost:3001](http://localhost:3001) and the API at [http://localhost:11500](http://localhost:11500).
 
-## UI Customization
+### Use with any OpenAI SDK
 
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
+```typescript
+import OpenAI from "openai";
 
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
+const client = new OpenAI({
+  baseURL: "http://localhost:11500/v1",
+  apiKey: "vxllm", // any string works in desktop mode
+});
 
-### Add more shared components
+const response = await client.chat.completions.create({
+  model: "llama3.1:8b",
+  messages: [{ role: "user", content: "Hello!" }],
+  stream: true,
+});
 
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
+for await (const chunk of response) {
+  process.stdout.write(chunk.choices[0]?.delta?.content || "");
+}
 ```
 
-Import shared components like this:
+## Features
 
-```tsx
-import { Button } from "@vxllm/ui/components/button";
-```
+**LLM Inference** — In-process inference via node-llama-cpp with automatic Metal/CUDA/CPU detection. No subprocess overhead, direct memory access, stateful KV cache.
 
-### Add app-specific blocks
+**OpenAI-Compatible API** — Drop-in replacement for OpenAI's API. Chat completions with SSE streaming, embeddings, and audio endpoints. Any OpenAI SDK works by changing `base_url`.
 
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
+**Voice Pipeline** — Speech-to-text via faster-whisper, text-to-speech via Kokoro-82M, voice activity detection via silero-vad. Real-time WebSocket voice chat with hold-to-talk and continuous VAD modes.
+
+**Model Management** — Download models from HuggingFace by friendly name (`vxllm pull llama3.1:8b`). Progress tracking, pause/resume, hardware-aware variant recommendations.
+
+**Desktop App** — Tauri 2 desktop app with chat UI, model library, dashboard, and settings. System tray, auto-start, lightweight (~5MB binary).
+
+**CLI** — Terminal-based management: `vxllm serve`, `vxllm pull`, `vxllm run` (interactive chat), `vxllm list`, `vxllm ps`, `vxllm rm`.
+
+**Dashboard** — Real-time GPU/CPU/RAM monitoring, tokens/sec throughput graphs, request counters, and active model display.
+
+**Server Mode** — Deploy on cloud VMs with Docker. API key authentication, CORS configuration, Prometheus metrics.
+
+## Tech Stack
+
+| Category | Technology |
+|----------|-----------|
+| Runtime | Bun |
+| Server | Hono |
+| Inference | node-llama-cpp v3 (Metal/CUDA/CPU) |
+| AI SDK | Vercel AI SDK + @ai-sdk/react |
+| Database | Drizzle ORM + SQLite (libsql/Turso) |
+| Frontend | React 19 + Vite + TanStack Router + Tailwind v4 |
+| Components | shadcn/ui |
+| Desktop | Tauri 2 |
+| CLI | citty |
+| Voice | faster-whisper + Kokoro-82M + silero-vad (Python sidecar) |
+| Monorepo | Turborepo |
 
 ## Project Structure
 
 ```
 vxllm/
 ├── apps/
-│   ├── web/         # Frontend application (React + TanStack Router)
-│   └── server/      # Backend API (Hono, ORPC)
+│   ├── web/              # React frontend + Tauri desktop
+│   ├── server/           # Hono API server
+│   ├── cli/              # Terminal CLI
+│   └── fumadocs/         # Documentation site
 ├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── api/         # API layer / business logic
-│   └── db/          # Database schema & queries
+│   ├── inference/        # node-llama-cpp engine wrapper
+│   ├── llama-provider/   # AI SDK provider for llama.cpp
+│   ├── api/              # oRPC router definitions
+│   ├── db/               # Drizzle database schemas
+│   ├── ui/               # Shared shadcn/ui components
+│   ├── env/              # Environment variable validation
+│   └── config/           # Shared TypeScript config
+├── sidecar/
+│   └── voice/            # Python voice sidecar (STT + TTS + VAD)
+├── docker/               # Docker deployment files
+└── models.json           # Curated model registry
 ```
 
-## Available Scripts
+## Development Commands
 
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run dev:server`: Start only the server
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run db:push`: Push schema changes to database
-- `bun run db:generate`: Generate database client/types
-- `bun run db:migrate`: Run database migrations
-- `bun run db:studio`: Open database studio UI
-- `bun run db:local`: Start the local SQLite database
-- `cd apps/web && bun run desktop:dev`: Start Tauri desktop app in development
-- `cd apps/web && bun run desktop:build`: Build Tauri desktop app
+```bash
+bun install              # Install all dependencies
+bun run dev              # Start all apps (web + server + docs)
+bun run dev:web          # Start web app only
+bun run dev:server       # Start API server only
+bun run build            # Build all apps for production
+bun run check-types      # TypeScript type checking
+bun run db:push          # Push schema to database
+bun run db:generate      # Generate migrations
+bun run db:migrate       # Run migrations
+bun run db:studio        # Open Drizzle Studio
+```
+
+### Desktop App
+
+```bash
+cd apps/web
+bun run desktop:dev      # Start Tauri dev mode
+bun run desktop:build    # Build desktop app (.dmg, .exe, .AppImage)
+```
+
+### Docker Deployment
+
+```bash
+docker compose up -d     # Start server + voice sidecar
+```
+
+## UI Customization
+
+Shared shadcn/ui components live in `packages/ui`. Add more:
+
+```bash
+npx shadcn@latest add accordion dialog popover -c packages/ui
+```
+
+Import in your app:
+
+```tsx
+import { Button } from "@vxllm/ui/components/button";
+```
+
+## Documentation
+
+Full project documentation lives in `docs/project/`:
+
+- [Features](docs/project/features/) — Feature specifications
+- [API Specs](docs/project/api/) — Endpoint documentation
+- [Database](docs/project/database/) — Schema documentation
+- [Workflows](docs/project/workflows/) — User flow documentation
+- [Architecture Decisions](docs/project/decisions.md) — ADRs
+- [Tech Stack](docs/project/tech-stack.md) — Technology choices
+- [Glossary](docs/project/glossary.md) — Term definitions
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | `file:./local.db` | SQLite or Turso connection |
+| `PORT` | `11500` | Server port |
+| `HOST` | `127.0.0.1` | Bind host |
+| `MODELS_DIR` | `~/.vxllm/models` | Model storage path |
+| `VOICE_SIDECAR_URL` | `http://localhost:11501` | Voice sidecar URL |
+| `API_KEY` | — | Server mode auth key |
+
+## License
+
+MIT
