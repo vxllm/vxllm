@@ -16,7 +16,10 @@ app.use(logger());
 app.use(
   "/*",
   cors({
-    origin: env.CORS_ORIGIN,
+    origin:
+      env.CORS_ORIGINS === "*"
+        ? "*"
+        : env.CORS_ORIGINS.split(",").map((o: string) => o.trim()),
     allowMethods: ["GET", "POST", "OPTIONS"],
   }),
 );
@@ -70,4 +73,8 @@ app.get("/", (c) => {
   return c.text("OK");
 });
 
-export default app;
+export default {
+  port: env.PORT,
+  hostname: env.HOST,
+  fetch: app.fetch,
+};
