@@ -96,9 +96,9 @@ export async function authMiddleware(c: Context, next: Next) {
     return next();
   }
 
-  // Always allow /health without auth
+  // Always allow /health and /metrics without auth
   const path = new URL(c.req.url).pathname;
-  if (path === "/health") {
+  if (path === "/health" || path === "/metrics") {
     return next();
   }
 

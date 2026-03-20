@@ -19,12 +19,15 @@ import { logger } from "hono/logger";
 import { authMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
 import { createHealthRoute } from "./routes/health";
+import { metricsRoute } from "./routes/metrics";
 import { createChatRoute } from "./routes/v1/chat";
 import { createCompletionsRoute } from "./routes/v1/completions";
 import { createEmbeddingsRoute } from "./routes/v1/embeddings";
 import { createModelsRoute } from "./routes/v1/models";
 import { createModelManagementRoute } from "./routes/api/models";
 import { createAudioRoutes } from "./routes/v1/audio";
+import { wsRoutes, websocket } from "./routes/ws/audio-stream";
+import { createVoiceChatRoute } from "./routes/ws/chat-voice";
 
 // ── Global Instances ──────────────────────────────────────────────────────────
 const modelManager = new ModelManager();
@@ -55,6 +58,13 @@ app.use("/*", errorHandler);
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.route("", createHealthRoute({ modelManager, startTime }));
+
+// ── Prometheus Metrics (skips auth — see auth middleware) ─────────────────────
+app.route("/metrics", metricsRoute);
+
+// ── WebSocket Routes ─────────────────────────────────────────────────────────
+app.route("/ws", wsRoutes);
+app.get("/ws/chat", createVoiceChatRoute({ modelManager }));
 
 // ── OpenAI-Compatible API Routes ──────────────────────────────────────────────
 app.route("/v1/chat", createChatRoute({ modelManager, registry }));
@@ -192,4 +202,5 @@ export default {
   port: env.PORT,
   hostname: env.HOST,
   fetch: app.fetch,
+  websocket,
 };
