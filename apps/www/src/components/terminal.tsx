@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import { Check, Copy } from "lucide-react";
+
 interface TerminalLine {
   type: "prompt" | "output" | "success" | "spacer";
   text?: string;
@@ -16,19 +21,53 @@ export function Terminal({
   showCursor = false,
   className = "",
 }: TerminalProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    const commands = lines
+      .filter((l) => l.type === "prompt")
+      .map((l) => l.text)
+      .join("\n");
+    navigator.clipboard.writeText(commands);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div
       className={`overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900/80 ${className}`}
       style={{ animation: "glow 4s ease-in-out infinite" }}
     >
       {/* Title bar */}
-      <div className="flex items-center gap-2 border-b border-neutral-800 px-4 py-3">
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#FF5F56]" />
-          <span className="inline-block h-3 w-3 rounded-full bg-[#FFBD2E]" />
-          <span className="inline-block h-3 w-3 rounded-full bg-[#27C93F]" />
+      <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block h-3 w-3 rounded-full bg-[#FF5F56]" />
+            <span className="inline-block h-3 w-3 rounded-full bg-[#FFBD2E]" />
+            <span className="inline-block h-3 w-3 rounded-full bg-[#27C93F]" />
+          </div>
+          <span className="ml-2 font-mono text-xs text-neutral-500">
+            {title}
+          </span>
         </div>
-        <span className="ml-2 font-mono text-xs text-neutral-500">{title}</span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 text-xs text-neutral-500 transition-colors hover:text-[#2EFAA0]"
+          aria-label={copied ? "Copied" : "Copy commands"}
+        >
+          {copied ? (
+            <>
+              <Check className="h-3.5 w-3.5 text-[#2EFAA0]" />
+              <span className="text-[#2EFAA0]">Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3.5 w-3.5" />
+              <span>Copy</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Terminal body */}

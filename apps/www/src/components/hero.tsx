@@ -1,5 +1,8 @@
+"use client";
+
 import { ArrowRight, Github } from "lucide-react";
 import { Terminal } from "./terminal";
+import { CopyButton } from "./copy-button";
 
 const terminalLines = [
   { type: "prompt" as const, text: "vxllm pull qwen2.5:7b" },
@@ -19,6 +22,8 @@ const terminalLines = [
     text: "allowing parallel computation for certain problems...",
   },
 ];
+
+const installCommand = "curl -fsSL https://vxllm.com/install.sh | sh";
 
 export function Hero() {
   return (
@@ -94,6 +99,20 @@ export function Hero() {
             Get Started
             <ArrowRight className="h-4 w-4" />
           </a>
+        </div>
+
+        {/* Quick install */}
+        <div
+          className="mt-8 flex items-center justify-center gap-3"
+          style={{
+            opacity: 0,
+            animation: "fadeUp 0.8s ease forwards 0.7s",
+          }}
+        >
+          <code className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 font-mono text-sm text-neutral-300">
+            {installCommand}
+          </code>
+          <CopyButton text={installCommand} />
         </div>
       </div>
 
