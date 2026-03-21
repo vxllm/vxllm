@@ -49,7 +49,7 @@
       "variants": [
         {
           "variant": "default",
-          "repo": "Systran/faster-whisper-large-v3-turbo",
+          "repo": "deepdml/faster-whisper-large-v3-turbo-ct2",
           "fileName": null,
           "downloadMethod": "repo",
           "sizeBytes": 1510000000,
