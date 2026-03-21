@@ -78,9 +78,9 @@ function ModelsPage() {
 
   // HuggingFace search state
   const [hfSearchValue, setHfSearchValue] = useState("");
-  const [hfTypeFilter, setHfTypeFilter] = useState<ModelType>("llm");
+
   const [hfSubmittedQuery, setHfSubmittedQuery] = useState("");
-  const debouncedHfType = hfTypeFilter;
+  const debouncedHfType = "llm";
 
   // Default popular models query (runs on mount)
   const hfPopularQuery = useQuery<{ models: HfModel[]; total: number }>({
@@ -275,24 +275,6 @@ function ModelsPage() {
               className="pl-9"
             />
           </div>
-          <Select
-            value={TYPE_LABELS[hfTypeFilter]}
-            onValueChange={(val) => {
-              if (!val) return;
-              const mapped = VALUE_TO_TYPE[val] as ModelType;
-              setHfTypeFilter(mapped);
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="LLM">LLM</SelectItem>
-              <SelectItem value="STT">STT</SelectItem>
-              <SelectItem value="TTS">TTS</SelectItem>
-              <SelectItem value="Embedding">Embedding</SelectItem>
-            </SelectContent>
-          </Select>
           <Button type="submit" variant="outline" disabled={!hfSearchValue.trim()}>
             <Search className="mr-1 size-4" />
             Search
