@@ -1,95 +1,160 @@
-# VxLLM
+<p align="center">
+  <img src="apps/www/public/logo-no-bg.png" width="80" height="80" alt="VxLLM" />
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Bun](https://img.shields.io/badge/Bun-1.3-f9f1e1.svg)](https://bun.sh)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+<h1 align="center">VxLLM</h1>
 
-> Open-source local AI server with voice — run LLMs, STT, and TTS locally with an OpenAI-compatible API.
+<p align="center">
+  <strong>Open-source local AI server with voice</strong><br/>
+  Run LLMs, STT, and TTS locally with an OpenAI-compatible API.
+</p>
 
-VxLLM is a unified, self-hostable model server that runs LLM, Speech-to-Text, and Text-to-Speech models on your hardware. It exposes a fully OpenAI-compatible REST API, provides real-time voice I/O via WebSocket, and includes a Tauri 2 desktop app and a developer CLI.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2EFAA0.svg?style=flat-square" alt="MIT License" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://bun.sh"><img src="https://img.shields.io/badge/Bun-1.3-f9f1e1.svg?style=flat-square&logo=bun&logoColor=black" alt="Bun" /></a>
+  <a href="https://hub.docker.com/r/datahase/vxllm"><img src="https://img.shields.io/badge/Docker-datahase%2Fvxllm-2496ED.svg?style=flat-square&logo=docker&logoColor=white" alt="Docker" /></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-2EFAA0.svg?style=flat-square" alt="PRs Welcome" /></a>
+</p>
+
+<p align="center">
+  <a href="https://vxllm.com">Website</a> ·
+  <a href="https://docs.vxllm.com">Docs</a> ·
+  <a href="https://github.com/datahase/vxllm/releases">Download</a> ·
+  <a href="https://hub.docker.com/r/datahase/vxllm">Docker Hub</a>
+</p>
+
+---
 
 ## What Makes VxLLM Different
 
-| Feature | Ollama | LM Studio | VxLLM |
-|---------|--------|-----------|-------|
-| Open source | Yes | No | Yes |
-| Voice (TTS/STT) | No | No | Yes |
-| Real-time WebSocket voice | No | No | Yes |
-| Desktop GUI | No | Yes | Yes |
-| CLI | Yes | No | Yes |
-| Server/Cloud mode | Partial | No | Yes |
-| In-process inference | No (Go wrapper) | N/A | Yes (node-llama-cpp) |
+| Feature | VxLLM | Ollama | LM Studio |
+|---------|:-----:|:------:|:---------:|
+| Open Source | ✅ | ✅ | ❌ |
+| Voice (STT + TTS) | ✅ | ❌ | ❌ |
+| WebSocket Voice Chat | ✅ | ❌ | ❌ |
+| Native Desktop GUI | ✅ | ✅ | ✅ |
+| CLI | ✅ | ✅ | ❌ |
+| OpenAI-Compatible API | ✅ | ✅ | ✅ |
+| In-Process Inference | ✅ | ⚠️ Go wrapper | ✅ |
+| Docker Hub Image | ✅ | ✅ | ❌ |
+| Prometheus Metrics | ✅ | ❌ | ❌ |
+| Hardware Dashboard | ✅ | ❌ | ✅ |
 
 ## Quick Start
 
+### Install & Run
+
 ```bash
-# Install VxLLM
 curl -fsSL https://vxllm.com/install.sh | sh
-
-# Pull a model
 vxllm pull qwen2.5:7b
-
-# Start the server
 vxllm serve
 ```
 
-The web app runs at [http://localhost:3001](http://localhost:3001) and the API at [http://localhost:11500](http://localhost:11500).
+The API runs at `http://localhost:11500` and the web UI at `http://localhost:3001`.
 
-### Use with any OpenAI SDK
+### Docker
+
+```bash
+docker pull datahase/vxllm
+docker run -p 11500:11500 datahase/vxllm
+```
+
+### Use with Any OpenAI SDK
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:11500/v1", api_key="vxllm")
+
+response = client.chat.completions.create(
+    model="qwen2.5:7b",
+    messages=[{"role": "user", "content": "Hello!"}],
+    stream=True,
+)
+
+for chunk in response:
+    print(chunk.choices[0].delta.content or "", end="")
+```
+
+<details>
+<summary><strong>TypeScript / JavaScript</strong></summary>
 
 ```typescript
 import OpenAI from "openai";
 
 const client = new OpenAI({
   baseURL: "http://localhost:11500/v1",
-  apiKey: "vxllm", // any string works in desktop mode
+  apiKey: "vxllm",
 });
 
-const response = await client.chat.completions.create({
-  model: "llama3.1:8b",
+const stream = await client.chat.completions.create({
+  model: "qwen2.5:7b",
   messages: [{ role: "user", content: "Hello!" }],
   stream: true,
 });
 
-for await (const chunk of response) {
+for await (const chunk of stream) {
   process.stdout.write(chunk.choices[0]?.delta?.content || "");
 }
 ```
 
+</details>
+
+<details>
+<summary><strong>curl</strong></summary>
+
+```bash
+curl http://localhost:11500/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5:7b",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": true
+  }'
+```
+
+</details>
+
 ## Features
 
-**LLM Inference** — In-process inference via node-llama-cpp with automatic Metal/CUDA/CPU detection. No subprocess overhead, direct memory access, stateful KV cache.
+| | Feature | Description |
+|---|---------|-------------|
+| ⚡ | **LLM Inference** | In-process via node-llama-cpp. Metal, CUDA, CPU auto-detected. No subprocess overhead. |
+| 🎤 | **Voice I/O** | STT (faster-whisper) + TTS (Kokoro) + VAD (silero-vad). Real-time WebSocket voice chat. |
+| 🔌 | **OpenAI API** | Drop-in replacement. Chat completions, embeddings, audio. Any OpenAI SDK works. |
+| 🖥️ | **Desktop App** | Tauri 2 native app (~5MB). System tray, chat UI, model library, dashboard. |
+| ⌨️ | **CLI** | `serve`, `pull`, `run`, `list`, `ps`, `rm`, `info`. Interactive streaming chat. |
+| 🐳 | **Docker** | `docker pull datahase/vxllm`. Server + voice sidecar in one compose file. |
+| 📊 | **Dashboard** | Real-time GPU/CPU/RAM gauges, metrics charts, Prometheus endpoint. |
+| 🔐 | **Server Mode** | API key auth, rate limiting, CORS. Deploy anywhere. |
 
-**OpenAI-Compatible API** — Drop-in replacement for OpenAI's API. Chat completions with SSE streaming, embeddings, and audio endpoints. Any OpenAI SDK works by changing `base_url`.
+## CLI Commands
 
-**Voice Pipeline** — Speech-to-text via faster-whisper, text-to-speech via Kokoro-82M, voice activity detection via silero-vad. Real-time WebSocket voice chat with hold-to-talk and continuous VAD modes.
-
-**Model Management** — Download models from HuggingFace by friendly name (`vxllm pull llama3.1:8b`). Progress tracking, pause/resume, hardware-aware variant recommendations.
-
-**Desktop App** — Tauri 2 desktop app with chat UI, model library, dashboard, and settings. System tray, auto-start, lightweight (~5MB binary).
-
-**CLI** — Terminal-based management: `vxllm serve`, `vxllm pull`, `vxllm run` (interactive chat), `vxllm list`, `vxllm ps`, `vxllm rm`.
-
-**Dashboard** — Real-time GPU/CPU/RAM monitoring, tokens/sec throughput graphs, request counters, and active model display.
-
-**Server Mode** — Deploy on cloud VMs with Docker. API key authentication, CORS configuration, Prometheus metrics.
+```bash
+vxllm serve                    # Start the server (port 11500)
+vxllm pull qwen2.5:7b          # Download a model from HuggingFace
+vxllm run qwen2.5:7b           # Interactive streaming chat
+vxllm list                     # Show downloaded models
+vxllm ps                       # Server status + loaded models
+vxllm rm qwen2.5:7b            # Remove a model
+vxllm info                     # Hardware profile + recommendations
+```
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|-----------|
-| Runtime | Bun |
-| Server | Hono |
-| Inference | node-llama-cpp v3 (Metal/CUDA/CPU) |
-| AI SDK | Vercel AI SDK + @ai-sdk/react |
-| Database | Drizzle ORM + SQLite (libsql/Turso) |
-| Frontend | React 19 + Vite + TanStack Router + Tailwind v4 |
-| Components | shadcn/ui |
-| Desktop | Tauri 2 |
-| CLI | citty |
-| Voice | faster-whisper + Kokoro-82M + silero-vad (Python sidecar) |
-| Monorepo | Turborepo |
+| | Technology | Purpose |
+|---|-----------|---------|
+| 🏃 | [Bun](https://bun.sh) | Runtime |
+| 🌐 | [Hono](https://hono.dev) | HTTP server |
+| 🧠 | [node-llama-cpp](https://node-llama-cpp.withcat.ai) | LLM inference (Metal/CUDA/CPU) |
+| 🤖 | [Vercel AI SDK](https://ai-sdk.dev) | Streaming, tools, structured output |
+| 🗄️ | [Drizzle](https://orm.drizzle.team) + SQLite | Database |
+| ⚛️ | React 19 + Vite + [TanStack Router](https://tanstack.com/router) | Frontend |
+| 🎨 | [shadcn/ui](https://ui.shadcn.com) + [Tailwind v4](https://tailwindcss.com) | Components + styling |
+| 🖥️ | [Tauri 2](https://tauri.app) | Desktop app |
+| 📦 | [Turborepo](https://turbo.build/repo) | Monorepo build |
+| 🎙️ | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) + [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) | Voice (Python sidecar) |
 
 ## Project Structure
 
@@ -98,26 +163,32 @@ vxllm/
 ├── apps/
 │   ├── app/              # React frontend + Tauri desktop
 │   ├── server/           # Hono API server
-│   ├── cli/              # Terminal CLI
-│   ├── docs/             # Documentation site (Fumadocs)
+│   ├── cli/              # Terminal CLI (citty)
+│   ├── docs/             # Documentation (Fumadocs)
 │   └── www/              # Marketing website (Next.js)
 ├── packages/
 │   ├── inference/        # node-llama-cpp engine wrapper
-│   ├── llama-provider/   # AI SDK provider for llama.cpp
-│   ├── api/              # oRPC router definitions
-│   ├── db/               # Drizzle database schemas
-│   ├── ui/               # Shared shadcn/ui components
-│   ├── env/              # Environment variable validation
-│   └── config/           # Shared TypeScript config
+│   ├── llama-provider/   # AI SDK language model adapter
+│   ├── api/              # oRPC routers + Zod schemas
+│   ├── db/               # Drizzle ORM (10 tables)
+│   ├── ui/               # 38 shadcn/ui components
+│   ├── env/              # Validated env config (17 vars)
+│   └── config/           # Shared tsconfig/eslint/tailwind
 ├── sidecar/
-│   └── voice/            # Python voice sidecar (STT + TTS + VAD)
-├── docker/               # Docker deployment files
-└── models.json           # Curated model registry
+│   └── voice/            # Python FastAPI (STT + TTS + VAD)
+├── docker/               # Dockerfiles + compose
+└── models.json           # Curated model registry (5 models)
 ```
 
 ## Development
 
-### Local Setup
+### Prerequisites
+
+- [Bun](https://bun.sh) >= 1.3
+- [Python](https://python.org) >= 3.11 (for voice sidecar, optional)
+- [Rust](https://rustup.rs) (for Tauri desktop builds, optional)
+
+### Setup
 
 ```bash
 git clone https://github.com/datahase/vxllm.git
@@ -126,24 +197,30 @@ bun install
 bun run db:push
 ```
 
-### Running
+### Run
 
 ```bash
-bun run dev              # Start all apps (app + server + docs + www)
-bun run dev:server       # Start API server only (port 11500)
-bun run dev:app          # Start frontend only (port 3001)
-bun run dev:docs         # Start docs site only (port 4000)
-bun run dev:www          # Start marketing site only (port 3000)
+bun run dev              # Start all apps (server + app + docs + www)
+bun run dev:server       # API server only → http://localhost:11500
+bun run dev:app          # Frontend only → http://localhost:3001
+bun run dev:docs         # Docs site only → http://localhost:4000
+bun run dev:www          # Marketing site only → http://localhost:3000
 ```
 
-### Other Commands
+### Voice Sidecar (optional)
 
 ```bash
-bun run build            # Build all apps for production
+cd sidecar/voice
+uv sync
+uv run uvicorn app.main:app --port 11501
+```
+
+### Build & Test
+
+```bash
+bun run build            # Build all apps
 bun run check-types      # TypeScript type checking
-bun run db:push          # Push schema to database
-bun run db:generate      # Generate migrations
-bun run db:studio        # Open Drizzle Studio
+bun run db:studio        # Open Drizzle Studio (database UI)
 ```
 
 ### Desktop App
@@ -151,40 +228,19 @@ bun run db:studio        # Open Drizzle Studio
 ```bash
 cd apps/app
 bun run desktop:dev      # Start Tauri dev mode
-bun run desktop:build    # Build desktop app (.dmg, .exe, .AppImage)
+bun run desktop:build    # Build .dmg / .exe / .AppImage
 ```
 
-### Docker Deployment
+### Docker
 
 ```bash
-docker compose up -d     # Start server + voice sidecar
+# From Docker Hub
+docker pull datahase/vxllm
+docker run -p 11500:11500 datahase/vxllm
+
+# Or build from source
+docker compose -f docker/docker-compose.yml up -d
 ```
-
-## UI Customization
-
-Shared shadcn/ui components live in `packages/ui`. Add more:
-
-```bash
-npx shadcn@latest add accordion dialog popover -c packages/ui
-```
-
-Import in your app:
-
-```tsx
-import { Button } from "@vxllm/ui/components/button";
-```
-
-## Documentation
-
-Full project documentation lives in `docs/project/`:
-
-- [Features](docs/project/features/) — Feature specifications
-- [API Specs](docs/project/api/) — Endpoint documentation
-- [Database](docs/project/database/) — Schema documentation
-- [Workflows](docs/project/workflows/) — User flow documentation
-- [Architecture Decisions](docs/project/decisions.md) — ADRs
-- [Tech Stack](docs/project/tech-stack.md) — Technology choices
-- [Glossary](docs/project/glossary.md) — Term definitions
 
 ## Environment Variables
 
@@ -192,29 +248,45 @@ Full project documentation lives in `docs/project/`:
 |----------|---------|-------------|
 | `DATABASE_URL` | `file:./local.db` | SQLite or Turso connection |
 | `PORT` | `11500` | Server port |
-| `HOST` | `127.0.0.1` | Bind host |
-| `MODELS_DIR` | `~/.vxllm/models` | Model storage path |
-| `VOICE_SIDECAR_URL` | `http://localhost:11501` | Voice sidecar URL |
-| `API_KEY` | — | Server mode auth key |
+| `HOST` | `127.0.0.1` | Bind host (`0.0.0.0` for server mode) |
+| `MODELS_DIR` | `~/.vxllm/models` | Model storage directory |
+| `VOICE_SIDECAR_URL` | `http://localhost:11501` | Python voice sidecar |
+| `API_KEY` | — | Auth key (required when `HOST=0.0.0.0`) |
+| `DEFAULT_MODEL` | — | Auto-load model on startup |
+| `MAX_CONTEXT_SIZE` | `8192` | Default context window |
+| `GPU_LAYERS_OVERRIDE` | — | Manual GPU layer count |
+| `LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/v1/chat/completions` | Chat with streaming SSE |
+| POST | `/v1/completions` | Text completion |
+| POST | `/v1/embeddings` | Text embeddings |
+| GET | `/v1/models` | List downloaded models |
+| POST | `/v1/audio/transcriptions` | Speech to text |
+| POST | `/v1/audio/speech` | Text to speech |
+| WS | `/ws/audio/stream` | Real-time STT |
+| WS | `/ws/chat` | Full voice chat loop |
+| GET | `/metrics` | Prometheus metrics |
+| GET | `/health` | Health check |
+| POST | `/api/models/pull` | Download a model |
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
-### Quick Contribution: Add a Model
-
-The easiest way to contribute is adding models to `models.json`. See the [contributing guide](CONTRIBUTING.md#contributing-to-modelsjson) for details.
+The easiest way to contribute is adding models to `models.json` — see the [contributing guide](CONTRIBUTING.md#contributing-to-modelsjson).
 
 ## Community
 
 - [GitHub Issues](https://github.com/datahase/vxllm/issues) — Bug reports
 - [GitHub Discussions](https://github.com/datahase/vxllm/discussions) — Questions & ideas
+- [Documentation](https://docs.vxllm.com) — Full docs
 - [Contributing Guide](CONTRIBUTING.md) — How to contribute
-- [Code of Conduct](CODE_OF_CONDUCT.md) — Community standards
 - [Security Policy](SECURITY.md) — Reporting vulnerabilities
 
 ## License
 
-VxLLM is open-source software licensed under the [MIT License](LICENSE).
-
-Built by [datahase](https://github.com/datahase).
+[MIT](LICENSE) — Built by [datahase](https://github.com/datahase).
