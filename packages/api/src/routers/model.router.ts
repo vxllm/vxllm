@@ -11,7 +11,6 @@ import {
 } from "../schemas/models";
 import { models, downloadQueue } from "@vxllm/db/schema/models";
 import { settings } from "@vxllm/db/schema/settings";
-import { env } from "@vxllm/env/server";
 import type { ModelInfo } from "@vxllm/inference";
 
 // Settings keys for persisted model slots
@@ -61,26 +60,6 @@ async function readModelSetting(
   return row?.value ?? null;
 }
 
-/** Send a request to the Python voice service. Returns null on failure. */
-async function voiceServiceRequest(
-  path: string,
-  method: "GET" | "POST" = "GET",
-  body?: Record<string, unknown>,
-): Promise<any | null> {
-  try {
-    const url = `${env.VOICE_URL}${path}`;
-    const res = await fetch(url, {
-      method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(2000),
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
 
 export const modelRouter = {
   // Query: list all models with optional filters
@@ -298,14 +277,20 @@ export const modelRouter = {
       }
 
       if (input.type === "stt" || input.type === "tts") {
-        // ── Voice model: proxy to Python voice service ──
-        const result = await voiceServiceRequest("/models/load", "POST", {
+        if (!context.voiceProcess) {
+          throw new Error("Voice process manager not available");
+        }
+        // Cancel any pending delayed kill (user is loading a new model)
+        context.voiceProcess.cancelDelayedKill();
+        await context.voiceProcess.ensureRunning();
+        const result = await context.voiceProcess.request("/models/load", "POST", {
           type: input.type,
           model_path: row.localPath,
+          backend: row.backend ?? null,
         });
         if (!result) {
           throw new Error(
-            "Voice service is unavailable. Start the voice service first.",
+            "Voice service failed to load model. Check server logs for details.",
           );
         }
         await persistModelSetting(context.db, input.type, input.id);
@@ -354,11 +339,17 @@ export const modelRouter = {
       }
 
       if (input.type === "stt" || input.type === "tts") {
-        // ── Voice model: proxy to Python voice service ──
-        await voiceServiceRequest("/models/unload", "POST", {
+        await context.voiceProcess?.request("/models/unload", "POST", {
           type: input.type,
         });
         await clearModelSetting(context.db, input.type);
+
+        // Check if both STT and TTS are now unloaded — schedule delayed kill
+        const sttSetting = await readModelSetting(context.db, "stt");
+        const ttsSetting = await readModelSetting(context.db, "tts");
+        if (!sttSetting && !ttsSetting && context.voiceProcess) {
+          context.voiceProcess.scheduleDelayedKill();
+        }
         return { success: true };
       }
 
@@ -386,26 +377,30 @@ export const modelRouter = {
     let stt: { modelId: string; modelName: string } | null = null;
     let tts: { modelId: string; modelName: string } | null = null;
     let voiceServiceStatus: "running" | "stopped" | "unavailable" =
-      "unavailable";
+      context.voiceProcess?.running ? "running" : "stopped";
 
-    const voiceHealth = await voiceServiceRequest("/health");
-    if (voiceHealth) {
-      voiceServiceStatus = "running";
-      const modelsStatus = await voiceServiceRequest("/models/status");
-      if (modelsStatus) {
-        if (modelsStatus.stt?.loaded) {
-          const sttId = await readModelSetting(context.db, "stt");
-          stt = {
-            modelId: sttId ?? "",
-            modelName: modelsStatus.stt.model_name ?? "Unknown STT",
-          };
-        }
-        if (modelsStatus.tts?.loaded) {
-          const ttsId = await readModelSetting(context.db, "tts");
-          tts = {
-            modelId: ttsId ?? "",
-            modelName: modelsStatus.tts.model_name ?? "Unknown TTS",
-          };
+    if (context.voiceProcess?.running) {
+      const voiceHealth = await context.voiceProcess.request("/health");
+      if (voiceHealth) {
+        voiceServiceStatus = "running";
+        // Read from new "engines" key (voice service refactored in Task 4)
+        // Fall back to old "models" key for backward compat during migration
+        const enginesOrModels = voiceHealth.engines ?? voiceHealth.models;
+        if (enginesOrModels) {
+          if (enginesOrModels.stt?.loaded) {
+            const sttId = await readModelSetting(context.db, "stt");
+            stt = {
+              modelId: sttId ?? "",
+              modelName: enginesOrModels.stt.model ?? enginesOrModels.stt.model_name ?? "Unknown STT",
+            };
+          }
+          if (enginesOrModels.tts?.loaded) {
+            const ttsId = await readModelSetting(context.db, "tts");
+            tts = {
+              modelId: ttsId ?? "",
+              modelName: enginesOrModels.tts.backend ?? enginesOrModels.tts.model_name ?? "Unknown TTS",
+            };
+          }
         }
       }
     }

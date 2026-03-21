@@ -3,11 +3,23 @@ import type { ModelManager, DownloadManager, Registry } from "@vxllm/inference";
 
 import { db } from "@vxllm/db";
 
+export interface VoiceProcess {
+  readonly running: boolean;
+  readonly url: string;
+  ensureRunning(): Promise<void>;
+  kill(): Promise<void>;
+  scheduleDelayedKill(): void;
+  cancelDelayedKill(): void;
+  getStatus(): Promise<Record<string, any> | null>;
+  request(path: string, method?: "GET" | "POST", body?: Record<string, unknown>): Promise<any | null>;
+}
+
 export type CreateContextOptions = {
   context: HonoContext;
   modelManager?: ModelManager;
   downloadManager?: DownloadManager;
   registry?: Registry;
+  voiceProcess?: VoiceProcess;
 };
 
 export async function createContext({
@@ -15,6 +27,7 @@ export async function createContext({
   modelManager,
   downloadManager,
   registry,
+  voiceProcess,
 }: CreateContextOptions) {
   return {
     db,
@@ -23,6 +36,7 @@ export async function createContext({
     modelManager: modelManager ?? null,
     downloadManager: downloadManager ?? null,
     registry: registry ?? null,
+    voiceProcess: voiceProcess ?? null,
   };
 }
 

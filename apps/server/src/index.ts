@@ -37,11 +37,13 @@ import { createAudioRoutes } from "./routes/v1/audio";
 import { createApiChatRoute } from "./routes/api/chat";
 import { wsRoutes, websocket } from "./routes/ws/audio-stream";
 import { createVoiceChatRoute } from "./routes/ws/chat-voice";
+import { VoiceProcessManager } from "./voice/voice-process-manager";
 
 // ── Global Instances ──────────────────────────────────────────────────────────
 const modelManager = new ModelManager();
 const registry = new Registry();
 const downloadManager = new DownloadManager(registry);
+const voiceProcess = new VoiceProcessManager();
 // Tracks whether startup() has completed (registry loaded, models initialized)
 export let startupComplete = false;
 const startTime = Date.now();
@@ -123,6 +125,7 @@ app.use("/*", async (c, next) => {
     modelManager,
     downloadManager,
     registry,
+    voiceProcess,
   });
 
   const rpcResult = await rpcHandler.handle(c.req.raw, {
@@ -208,28 +211,22 @@ async function startup() {
       }
 
       if (type === "stt" || type === "tts") {
-        // Voice models: proxy to voice service (only if running)
         try {
-          const healthRes = await fetch(`${env.VOICE_URL}/health`, {
-            signal: AbortSignal.timeout(2000),
+          await voiceProcess.ensureRunning();
+          const loadRes = await voiceProcess.request("/models/load", "POST", {
+            type,
+            model_path: model.localPath,
+            backend: model.backend ?? null,
           });
-          if (healthRes.ok) {
-            const loadRes = await fetch(`${env.VOICE_URL}/models/load`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ type, model_path: model.localPath }),
-              signal: AbortSignal.timeout(10000),
-            });
-            if (loadRes.ok) {
-              console.log(`[startup] Auto-loaded ${type}: ${model.displayName}`);
-            } else {
-              console.warn(`[startup] Failed to auto-load ${type} model "${model.displayName}" via voice service`);
-            }
+          if (loadRes) {
+            console.log(`[startup] Auto-loaded ${type}: ${model.displayName}`);
           } else {
-            console.log(`[startup] Voice service not running — skipping ${type} auto-load`);
+            console.warn(`[startup] Failed to auto-load ${type} model`);
+            await db.delete(settings).where(eq(settings.key, key));
           }
-        } catch {
-          console.log(`[startup] Voice service unavailable — skipping ${type} auto-load`);
+        } catch (err) {
+          console.warn(`[startup] Voice service unavailable — skipping ${type} auto-load`);
+          await db.delete(settings).where(eq(settings.key, key));
         }
       } else {
         // LLM/Embedding: load via ModelManager
@@ -321,6 +318,7 @@ startup();
 async function shutdown() {
   console.log("[shutdown] Shutting down gracefully...");
   downloadManager.cancelAll();
+  await voiceProcess.kill();
   await modelManager.disposeAll();
   console.log("[shutdown] Cleanup complete");
   process.exit(0);
