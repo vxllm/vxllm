@@ -18,6 +18,16 @@ function formatMb(mb: number): string {
   return `${mb} MB`;
 }
 
+/**
+ * Returns a Tailwind class for the progress indicator color based on usage percentage.
+ * < 60% = default (green/primary), 60-80% = amber, > 80% = red
+ */
+function gaugeColorClass(percent: number): string {
+  if (percent > 80) return "[&_[data-slot=progress-indicator]]:bg-red-500";
+  if (percent >= 60) return "[&_[data-slot=progress-indicator]]:bg-amber-500";
+  return "";
+}
+
 export function HardwareGauges() {
   const { data, isLoading } = useQuery(
     orpc.dashboard.getHardwareStatus.queryOptions({
@@ -61,7 +71,7 @@ export function HardwareGauges() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Progress value={cpuPercent} />
+          <Progress value={cpuPercent} className={gaugeColorClass(cpuPercent)} />
           <p className="mt-2 text-sm font-medium tabular-nums">
             {cpuPercent.toFixed(1)}%
           </p>
@@ -77,7 +87,7 @@ export function HardwareGauges() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Progress value={ramPercent} />
+          <Progress value={ramPercent} className={gaugeColorClass(ramPercent)} />
           <p className="mt-2 text-sm font-medium tabular-nums">
             {ramPercent.toFixed(1)}%{" "}
             <span className="text-muted-foreground">
@@ -98,7 +108,7 @@ export function HardwareGauges() {
         <CardContent>
           {gpuPercent != null ? (
             <>
-              <Progress value={gpuPercent} />
+              <Progress value={gpuPercent} className={gaugeColorClass(gpuPercent)} />
               <p className="mt-2 text-sm font-medium tabular-nums">
                 {gpuPercent.toFixed(1)}%
               </p>

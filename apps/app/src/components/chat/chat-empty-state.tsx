@@ -44,10 +44,8 @@ export function ChatEmptyState() {
   const hasActiveModel = activeModel !== null;
 
   const handlePromptClick = (prompt: string) => {
-    const conversationId = crypto.randomUUID();
     navigate({
-      to: "/chat/$conversationId",
-      params: { conversationId },
+      to: "/chat",
       search: { prompt },
     });
   };

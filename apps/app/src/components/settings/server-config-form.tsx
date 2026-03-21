@@ -189,7 +189,7 @@ export function ServerConfigForm() {
           placeholder="Auto (leave empty)"
         />
         <p className="text-xs text-muted-foreground">
-          Override the automatic GPU layer count. Leave empty for auto-detection.
+          Leave empty for auto-detection. Set to 0 for CPU-only.
         </p>
       </div>
 
@@ -201,6 +201,10 @@ export function ServerConfigForm() {
         )}
         Save Settings
       </Button>
+
+      <p className="text-xs text-muted-foreground">
+        Note: Port and host changes require a server restart to take effect.
+      </p>
     </div>
   );
 }

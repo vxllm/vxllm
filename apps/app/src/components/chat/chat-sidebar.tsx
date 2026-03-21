@@ -17,12 +17,14 @@ import { Input } from "@vxllm/ui/components/input";
 import { ScrollArea } from "@vxllm/ui/components/scroll-area";
 import { useDebounce } from "@vxllm/ui/hooks/use-debounce";
 import { Skeleton } from "@vxllm/ui/components/skeleton";
-import { CircleIcon, MessageSquarePlus, Search, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { CircleIcon, Loader2, MessageSquarePlus, Search, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useActiveModel } from "@/hooks/use-active-model";
 import { groupConversationsByDate, truncateTitle } from "@/lib/chat";
 import { orpc } from "@/utils/orpc";
+
+const PAGE_SIZE = 100;
 
 export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const navigate = useNavigate();
@@ -33,12 +35,18 @@ export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
 
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounce(searchValue, 300);
+  const [page, setPage] = useState(1);
+
+  // Reset pagination when search query changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const conversationsQuery = useQuery(
     orpc.chat.listConversations.queryOptions({
       input: {
-        page: 1,
-        limit: 50,
+        page,
+        limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
       },
     }),
@@ -49,7 +57,7 @@ export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
       onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: orpc.chat.listConversations.queryOptions({
-            input: { page: 1, limit: 50 },
+            input: { page: 1, limit: PAGE_SIZE },
           }).queryKey,
         });
         if (activeConversationId) {
@@ -60,7 +68,13 @@ export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   );
 
   const conversations = conversationsQuery.data?.items ?? [];
+  const total = conversationsQuery.data?.total ?? 0;
+  const hasMore = page * PAGE_SIZE < total;
   const groups = groupConversationsByDate(conversations);
+
+  const handleLoadMore = useCallback(() => {
+    setPage((prev) => prev + 1);
+  }, []);
 
   return (
     <div className="flex h-full flex-col border-r bg-muted/30">
@@ -107,26 +121,42 @@ export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                 : "No conversations yet"}
             </div>
           ) : (
-            groups.map((group) => (
-              <div key={group.label} className="mt-2 first:mt-0">
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground/70">
-                  {group.label}
+            <>
+              {groups.map((group) => (
+                <div key={group.label} className="mt-2 first:mt-0">
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground/70">
+                    {group.label}
+                  </div>
+                  {group.conversations.map((conversation) => (
+                    <ConversationItem
+                      key={conversation.id}
+                      id={conversation.id}
+                      title={conversation.title}
+                      isActive={activeConversationId === conversation.id}
+                      onDelete={() =>
+                        deleteConversation.mutate({ id: conversation.id })
+                      }
+                      isDeleting={deleteConversation.isPending}
+                      onNavigate={onNavigate}
+                    />
+                  ))}
                 </div>
-                {group.conversations.map((conversation) => (
-                  <ConversationItem
-                    key={conversation.id}
-                    id={conversation.id}
-                    title={conversation.title}
-                    isActive={activeConversationId === conversation.id}
-                    onDelete={() =>
-                      deleteConversation.mutate({ id: conversation.id })
-                    }
-                    isDeleting={deleteConversation.isPending}
-                    onNavigate={onNavigate}
-                  />
-                ))}
-              </div>
-            ))
+              ))}
+              {hasMore && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 w-full text-xs text-muted-foreground"
+                  onClick={handleLoadMore}
+                  disabled={conversationsQuery.isFetching}
+                >
+                  {conversationsQuery.isFetching ? (
+                    <Loader2 className="mr-1 size-3 animate-spin" />
+                  ) : null}
+                  Load more
+                </Button>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>

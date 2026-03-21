@@ -90,7 +90,7 @@ export function ChatMessages({
               </div>
 
               {message.role === "assistant" && !isStreaming && (
-                <MessageActions className="ml-10">
+                <MessageActions className="ml-10 opacity-50 transition-opacity hover:opacity-100">
                   <MessageAction
                     tooltip={copiedMessageId === message.id ? "Copied!" : "Copy"}
                     onClick={() => handleCopy(message.id, getMessageText(message))}
