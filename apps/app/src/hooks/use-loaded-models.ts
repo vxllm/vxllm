@@ -3,15 +3,13 @@ import { toast } from "sonner";
 
 import { orpc } from "@/utils/orpc";
 
-/**
- * Hook to query and manage the active (loaded) model.
- * Provides the current active model, loading state, and a mutation to load a new model.
- */
-export function useActiveModel() {
+type ModelType = "llm" | "embedding" | "stt" | "tts";
+
+export function useLoadedModels() {
   const queryClient = useQueryClient();
 
-  const activeModelQuery = useQuery({
-    ...orpc.models.getActiveModel.queryOptions({}),
+  const loadedModelsQuery = useQuery({
+    ...orpc.models.getLoadedModels.queryOptions({}),
     refetchInterval: 5000,
   });
 
@@ -19,9 +17,9 @@ export function useActiveModel() {
     orpc.models.loadModel.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: orpc.models.getActiveModel.queryOptions({}).queryKey,
+          queryKey: orpc.models.getLoadedModels.queryOptions({}).queryKey,
         });
-        toast.success("Model loaded successfully");
+        toast.success("Model loaded");
       },
       onError: (error) => {
         toast.error(`Failed to load model: ${error.message}`);
@@ -33,7 +31,7 @@ export function useActiveModel() {
     orpc.models.unloadModel.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: orpc.models.getActiveModel.queryOptions({}).queryKey,
+          queryKey: orpc.models.getLoadedModels.queryOptions({}).queryKey,
         });
         toast.success("Model unloaded");
       },
@@ -44,11 +42,17 @@ export function useActiveModel() {
   );
 
   return {
-    activeModel: activeModelQuery.data ?? null,
-    isLoadingQuery: activeModelQuery.isLoading,
-    loadModel: loadModelMutation.mutate,
+    llm: loadedModelsQuery.data?.llm ?? null,
+    embedding: loadedModelsQuery.data?.embedding ?? null,
+    stt: loadedModelsQuery.data?.stt ?? null,
+    tts: loadedModelsQuery.data?.tts ?? null,
+    voiceServiceStatus: loadedModelsQuery.data?.voiceServiceStatus ?? "unavailable",
+    isLoading: loadedModelsQuery.isLoading,
+    loadModel: (id: string, type: ModelType) =>
+      loadModelMutation.mutate({ id, type }),
     isLoadingModel: loadModelMutation.isPending,
-    unloadModel: unloadModelMutation.mutate,
+    unloadModel: (type: ModelType) =>
+      unloadModelMutation.mutate({ type }),
     isUnloading: unloadModelMutation.isPending,
   };
 }
