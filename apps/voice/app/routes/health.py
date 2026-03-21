@@ -16,10 +16,11 @@ async def health() -> dict:
     """Return the readiness status of every engine."""
     return {
         "status": "ok",
-        "models": {
+        "engines": {
             "stt": {
                 "loaded": stt_engine.is_loaded,
                 "model": stt_engine.model_name,
+                "backend": stt_engine.backend,
             },
             "tts": {
                 "loaded": tts_engine.is_loaded,

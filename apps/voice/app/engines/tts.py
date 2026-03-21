@@ -1,20 +1,20 @@
 """Text-to-Speech engine.
 
-Attempts to load Kokoro for high-quality neural TTS.  If Kokoro is
-not installed, falls back to a silent placeholder so the rest of the
-voice service (STT, VAD, health checks) continues to work.
+Loads a Kokoro TTS model from an explicit path provided by the Bun
+server.  No auto-download or placeholder fallback — if the model is
+not loaded, synthesis requests will fail with a clear error.
 """
 
 from __future__ import annotations
 
 import io
 import logging
+from pathlib import Path
 from typing import AsyncGenerator
 
-import numpy as np
 import soundfile as sf
 
-from app.config import MODELS_DIR, TTS_VOICE
+from app.config import TTS_VOICE
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +27,11 @@ KOKORO_VOICES: list[dict] = [
 
 
 class TTSEngine:
-    """Lazy-loaded TTS wrapper.
+    """Stateless TTS wrapper.
 
-    Tries Kokoro first; falls back to a placeholder that generates
-    silence so callers always get a valid audio stream.
+    Models are loaded only via explicit ``load(model_path=...)`` calls
+    from the Bun server.  No auto-download logic — VxLLM manages
+    model downloads.
     """
 
     def __init__(self) -> None:
@@ -39,68 +40,53 @@ class TTSEngine:
         self._backend: str = "none"
         self._default_voice: str = TTS_VOICE
 
-    def load(self, lang_code: str = "a", model_path: str | None = None) -> None:
-        """Attempt to load the Kokoro TTS backend.
+    @property
+    def backend(self) -> str:
+        """Return the active TTS backend name."""
+        return self._backend
 
-        First checks if a model was pre-downloaded by the unified
-        download manager into ``MODELS_DIR/tts/``.  If a ``.pth``
-        checkpoint is found there, it is passed to Kokoro.  Otherwise
-        falls back to Kokoro's default model resolution for backward
-        compatibility.
+    def load(self, lang_code: str = "a", model_path: str | None = None, backend: str | None = None) -> None:
+        """Load the Kokoro TTS model from an explicit path.
+
+        Parameters
+        ----------
+        lang_code:
+            Language code for Kokoro (default ``"a"`` for American English).
+        model_path:
+            Absolute path to the model file or directory.  Required.
+        backend:
+            Optional backend hint (currently only ``"kokoro"`` is supported).
         """
         if self._loaded:
             return
 
-        # If a specific model path is provided, use it directly
-        if model_path is not None:
-            try:
-                from kokoro import KPipeline
-                logger.info("Loading TTS model from path: %s", model_path)
-                self.pipeline = KPipeline(lang_code=lang_code, model=model_path)
-                self._loaded = True
-                self._backend = "kokoro"
-                logger.info("Kokoro TTS loaded from %s", model_path)
-            except Exception as e:
-                logger.warning(f"Failed to load Kokoro from {model_path}: {e}. Using placeholder.")
-                self._loaded = True
-                self._backend = "placeholder"
-            return
+        if model_path is None:
+            raise ValueError("model_path is required — VxLLM manages model downloads")
 
-        logger.info("Loading Kokoro TTS pipeline...")
+        p = Path(model_path)
+        if not p.exists():
+            raise FileNotFoundError(f"Model path does not exist: {model_path}")
+
+        # Find the .pth model file
+        if p.is_dir():
+            pth_files = list(p.glob("*.pth"))
+            if not pth_files:
+                raise FileNotFoundError(f"No .pth model file found in directory: {model_path}")
+            model_file = str(pth_files[0])
+        else:
+            model_file = str(p)
+
         try:
             from kokoro import KPipeline
-            from pathlib import Path
-
-            # Check for a pre-downloaded model in MODELS_DIR/tts/
-            tts_dir = Path(MODELS_DIR) / "tts"
-            local_model: str | None = None
-            if tts_dir.exists():
-                pth_files = list(tts_dir.glob("*.pth"))
-                if pth_files:
-                    local_model = str(pth_files[0])
-                    logger.info(
-                        "Found pre-downloaded TTS model: %s", local_model
-                    )
-
-            if local_model:
-                self.pipeline = KPipeline(
-                    lang_code=lang_code, model=local_model
-                )
-            else:
-                logger.info(
-                    "No pre-downloaded TTS model found in %s, "
-                    "using Kokoro default model resolution",
-                    tts_dir,
-                )
-                self.pipeline = KPipeline(lang_code=lang_code)
-
+            logger.info("Loading TTS model from path: %s", model_file)
+            self.pipeline = KPipeline(lang_code=lang_code, model=model_file)
             self._loaded = True
             self._backend = "kokoro"
             logger.info("Kokoro TTS loaded successfully")
+        except ImportError:
+            raise ImportError("Kokoro TTS package not installed. Run: pip install kokoro")
         except Exception as e:
-            logger.warning(f"Failed to load Kokoro: {e}. Using placeholder.")
-            self._loaded = True
-            self._backend = "placeholder"
+            raise RuntimeError(f"Failed to load TTS model: {e}") from e
 
     def unload(self) -> None:
         """Unload the current TTS model and free resources."""
@@ -111,13 +97,10 @@ class TTSEngine:
         self._backend = "none"
         logger.info("TTS model unloaded.")
 
+    @property
     def is_loaded(self) -> bool:
         """Return whether any TTS backend has been loaded."""
         return self._loaded
-
-    def get_backend(self) -> str:
-        """Return the name of the active backend."""
-        return self._backend
 
     def get_voices(self) -> list[dict]:
         """Return the list of available voices."""
@@ -131,37 +114,21 @@ class TTSEngine:
     ) -> AsyncGenerator[bytes, None]:
         """Generate WAV audio bytes for *text*.
 
-        Yields complete WAV chunks — one per sentence when using
-        Kokoro, or a single silent WAV when using the placeholder.
+        Yields complete WAV chunks — one per sentence when using Kokoro.
+        Raises ``RuntimeError`` if no model is loaded.
         """
-        if not self._loaded:
-            self.load()
+        if not self._loaded or self.pipeline is None:
+            raise RuntimeError("TTS model not loaded. Load a model first via the API.")
 
         voice = voice or self._default_voice
 
-        if self._backend == "placeholder" or self.pipeline is None:
-            yield self._generate_silence()
-            return
-
-        try:
-            for _, _, audio in self.pipeline(  # type: ignore[operator]
-                text, voice=voice, speed=speed, split_pattern=r"[.!?]"
-            ):
-                buf = io.BytesIO()
-                sf.write(buf, audio, 24000, format="WAV")
-                buf.seek(0)
-                yield buf.read()
-        except Exception as e:
-            logger.error(f"TTS synthesis error: {e}")
-            yield self._generate_silence()
-
-    def _generate_silence(self) -> bytes:
-        """Return a 1-second silent WAV at 24 kHz."""
-        buf = io.BytesIO()
-        silence = np.zeros(24000, dtype=np.float32)
-        sf.write(buf, silence, 24000, format="WAV")
-        buf.seek(0)
-        return buf.read()
+        for _, _, audio in self.pipeline(  # type: ignore[operator]
+            text, voice=voice, speed=speed, split_pattern=r"[.!?]"
+        ):
+            buf = io.BytesIO()
+            sf.write(buf, audio, 24000, format="WAV")
+            buf.seek(0)
+            yield buf.read()
 
 
 # Module-level singleton.

@@ -11,8 +11,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS, HOST, PORT
-from app.engines.stt import stt_engine
-from app.engines.tts import tts_engine
 from app.engines.vad import vad_engine
 from app.routes import health, speak, stream, transcribe, voices
 from app.routes.models import router as models_router
@@ -26,28 +24,16 @@ logger = logging.getLogger("vxllm-voice")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Preload models on startup so the first request is fast."""
+    """Start voice service — only VAD is preloaded eagerly."""
     logger.info("Starting VxLLM Voice Service …")
-
-    # Load engines — each handles its own errors gracefully.
-    try:
-        await stt_engine.load()
-    except Exception:
-        logger.warning("STT engine failed to preload — will retry on first request.")
-
-    try:
-        await tts_engine.load()
-    except (Exception, SystemExit):
-        logger.warning("TTS engine failed to preload — will retry on first request.")
-
+    # VAD is an internal dependency — load eagerly
     try:
         await vad_engine.load()
     except Exception:
         logger.warning("VAD engine failed to preload — will retry on first request.")
-
-    logger.info("Voice service ready on http://%s:%d", HOST, PORT)
+    logger.info("Voice service ready (waiting for model load requests from VxLLM)")
     yield
-    logger.info("Shutting down Voice Service.")
+    logger.info("Voice service shutting down")
 
 
 app = FastAPI(

@@ -17,6 +17,7 @@ router = APIRouter(prefix="/models", tags=["models"])
 class LoadModelRequest(BaseModel):
     type: str  # "stt" or "tts"
     model_path: str
+    backend: str | None = None
 
 
 class UnloadModelRequest(BaseModel):
@@ -29,13 +30,13 @@ async def load_model(req: LoadModelRequest) -> dict:
     if req.type == "stt":
         if stt_engine.is_loaded:
             await stt_engine.unload()
-        await stt_engine.load(model_path=req.model_path)
-        return {"success": True, "type": "stt", "model_name": stt_engine.model_name}
+        await stt_engine.load(model_path=req.model_path, backend=req.backend)
+        return {"success": True, "type": "stt", "model_name": stt_engine.model_name, "backend": stt_engine.backend}
     elif req.type == "tts":
-        if tts_engine.is_loaded():
+        if tts_engine.is_loaded:
             tts_engine.unload()
-        tts_engine.load(model_path=req.model_path)
-        return {"success": True, "type": "tts", "backend": tts_engine.get_backend()}
+        tts_engine.load(model_path=req.model_path, backend=req.backend)
+        return {"success": True, "type": "tts", "backend": tts_engine.backend}
     else:
         return {"success": False, "error": f"Unknown type: {req.type}"}
 
@@ -60,9 +61,10 @@ async def models_status() -> dict:
         "stt": {
             "loaded": stt_engine.is_loaded,
             "model_name": stt_engine.model_name if stt_engine.is_loaded else None,
+            "backend": stt_engine.backend if stt_engine.is_loaded else None,
         },
         "tts": {
-            "loaded": tts_engine.is_loaded(),
-            "model_name": tts_engine.get_backend() if tts_engine.is_loaded() else None,
+            "loaded": tts_engine.is_loaded,
+            "backend": tts_engine.backend if tts_engine.is_loaded else None,
         },
     }
