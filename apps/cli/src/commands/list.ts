@@ -43,15 +43,17 @@ export default defineCommand({
     console.log(
       padRight("NAME", 25) +
         padRight("TYPE", 10) +
+        padRight("BACKEND", 16) +
         padRight("VARIANT", 12) +
         padRight("SIZE", 10) +
         "STATUS",
     );
-    console.log("\u2500".repeat(67));
+    console.log("\u2500".repeat(83));
     for (const m of filtered) {
       console.log(
         padRight(m.name, 25) +
           padRight(m.type, 10) +
+          padRight(m.backend ? m.backend.toUpperCase() : "\u2014", 16) +
           padRight(m.variant ?? "\u2014", 12) +
           padRight(m.sizeBytes ? formatBytes(m.sizeBytes) : "\u2014", 10) +
           m.status,

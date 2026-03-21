@@ -14,6 +14,7 @@ const main = defineCommand({
     ps: () => import("./commands/ps").then((m) => m.default),
     rm: () => import("./commands/rm").then((m) => m.default),
     info: () => import("./commands/info").then((m) => m.default),
+    voice: () => import("./commands/voice").then((m) => m.default),
   },
 });
 
