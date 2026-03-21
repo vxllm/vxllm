@@ -51,7 +51,7 @@ export default defineCommand({
 
       try {
         const proc = Bun.spawn(
-          ["uv", "run", "uvicorn", "app.main:app", "--host", args.host, "--port", args["voice-port"]],
+          ["uv", "run", "python", "-m", "uvicorn", "app.main:app", "--host", args.host, "--port", args["voice-port"]],
           {
             cwd: voiceDir,
             stdio: ["ignore", "pipe", "pipe"],

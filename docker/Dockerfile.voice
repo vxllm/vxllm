@@ -5,4 +5,4 @@ COPY apps/voice/ .
 RUN uv sync --no-dev
 EXPOSE 11501
 ENV VOICE_HOST=0.0.0.0 VOICE_PORT=11501
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "11501"]
+CMD ["uv", "run", "python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "11501"]

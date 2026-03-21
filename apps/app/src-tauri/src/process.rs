@@ -29,6 +29,8 @@ impl ProcessManager {
         let child = Command::new("uv")
             .args([
                 "run",
+                "python",
+                "-m",
                 "uvicorn",
                 "app.main:app",
                 "--host",

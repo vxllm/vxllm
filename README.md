@@ -211,7 +211,7 @@ bun run dev:www          # Marketing site only → http://localhost:3000
 ```bash
 cd apps/voice
 uv sync
-uv run uvicorn app.main:app --port 11501
+uv run python -m uvicorn app.main:app --port 11501
 ```
 
 ### Build & Test
