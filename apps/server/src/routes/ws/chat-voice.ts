@@ -8,24 +8,18 @@ import { createLlamaProvider } from "@vxllm/llama-provider";
 const { upgradeWebSocket } = createBunWebSocket();
 
 /**
- * Client config message (JSON, sent once after connection opens):
- */
-interface VoiceChatConfig {
-  /** Optional system prompt for the LLM. */
-  systemPrompt?: string;
-  /** TTS voice name (e.g. "af_sky"). */
-  voice?: string;
-}
-
-/**
- * Server -> Client JSON message types:
- *   { type: "stt_result", text, language, confidence }
- *   { type: "llm_token", text }
- *   { type: "llm_done" }
- *   { type: "tts_audio" }  (followed by binary audio chunks)
- *   { type: "turn_end" }
- *   { type: "error", detail }
- *   { type: "config_ack" }
+ * Server -> Client JSON message types (new protocol):
+ *
+ *   { type: "vad", is_speech: boolean }
+ *   { type: "transcript", text: string, language: string }
+ *   { type: "response_start" }
+ *   { type: "response_delta", text: string }
+ *   { type: "response_end", text: string }
+ *   { type: "audio", data: string }          // base64 WAV chunk
+ *   { type: "error", message: string }
+ *
+ * Client -> Server:
+ *   Binary PCM audio frames (16-bit LE, 16kHz mono, ~30ms = 1920 bytes)
  */
 
 /**
@@ -34,21 +28,21 @@ interface VoiceChatConfig {
  * Full voice chat loop: audio -> STT (via voice service) -> LLM -> TTS (via voice service) -> audio.
  *
  * Flow:
- * 1. Client connects, sends a JSON config message.
+ * 1. Client connects; server opens a WebSocket to the voice service `/stream`.
  * 2. Client streams binary PCM audio frames.
- * 3. Audio is proxied to the voice service STT WebSocket.
+ * 3. Audio is forwarded to the voice service STT WebSocket.
  * 4. When voice service returns a transcription, we:
- *    a. Send { type: "stt_result", text } to the client.
- *    b. Run LLM inference, streaming tokens as { type: "llm_token", text }.
- *    c. Send { type: "llm_done" } when generation finishes.
- *    d. Call TTS voice service with the full response, stream audio back.
- *    e. Send { type: "turn_end" }.
- * 5. Client can send more audio for the next turn.
+ *    a. Send { type: "transcript", text, language } to the client.
+ *    b. Run LLM inference, streaming deltas as { type: "response_delta", text }.
+ *    c. Send { type: "response_end", text: fullText } when generation finishes.
+ *    d. Call TTS voice service with the full response, stream base64 audio back.
+ * 5. VAD status from voice service is forwarded as { type: "vad", is_speech }.
+ * 6. Errors are sent as { type: "error", message } without closing the connection.
+ * 7. On client disconnect, close voice service WebSocket and clean up.
  */
 export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
   return upgradeWebSocket(() => {
     let voiceWs: WebSocket | null = null;
-    let config: VoiceChatConfig = {};
     let conversationHistory: Array<{
       role: "system" | "user" | "assistant";
       content: string;
@@ -60,8 +54,8 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
         console.log("[ws/chat-voice] Client connected");
 
         // Connect to the voice service STT WebSocket
-        const voiceUrl = env.VOICE_URL.replace(/^http/, "ws");
-        voiceWs = new WebSocket(`${voiceUrl}/stream`);
+        const voicePort = env.VOICE_PORT;
+        voiceWs = new WebSocket(`ws://127.0.0.1:${voicePort}/stream`);
         voiceWs.binaryType = "arraybuffer";
 
         voiceWs.onopen = () => {
@@ -77,8 +71,8 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
             const msg = JSON.parse(event.data);
 
             if (msg.type === "vad") {
-              // Forward VAD events to client
-              ws.send(JSON.stringify(msg));
+              // Forward VAD events to client with new protocol shape
+              sendJson(ws, { type: "vad", is_speech: msg.is_speech });
               return;
             }
 
@@ -86,15 +80,12 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
               isProcessing = true;
               const userText = msg.text.trim();
 
-              // Send STT result to client
-              ws.send(
-                JSON.stringify({
-                  type: "stt_result",
-                  text: userText,
-                  language: msg.language,
-                  confidence: msg.confidence,
-                }),
-              );
+              // Send transcript to client
+              sendJson(ws, {
+                type: "transcript",
+                text: userText,
+                language: msg.language ?? "en",
+              });
 
               // Run LLM inference
               try {
@@ -117,31 +108,24 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
                 }
 
                 // Call TTS and stream audio back
-                await runTtsAndStream(ws, fullResponse, config.voice);
-
-                ws.send(JSON.stringify({ type: "turn_end" }));
+                await runTtsAndStream(ws, fullResponse);
               } catch (err) {
                 console.error("[ws/chat-voice] Pipeline error:", err);
-                try {
-                  ws.send(
-                    JSON.stringify({
-                      type: "error",
-                      detail:
-                        err instanceof Error
-                          ? err.message
-                          : "Pipeline error",
-                    }),
-                  );
-                } catch {
-                  // Client gone
-                }
+                sendJsonSafe(ws, {
+                  type: "error",
+                  message:
+                    err instanceof Error ? err.message : "Pipeline error",
+                });
               } finally {
                 isProcessing = false;
               }
             }
 
             if (msg.type === "error") {
-              ws.send(JSON.stringify(msg));
+              sendJson(ws, {
+                type: "error",
+                message: msg.message ?? msg.detail ?? "Voice service error",
+              });
             }
           } catch (err) {
             console.error(
@@ -153,16 +137,10 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
 
         voiceWs.onerror = () => {
           console.error("[ws/chat-voice] Voice service WebSocket error");
-          try {
-            ws.send(
-              JSON.stringify({
-                type: "error",
-                detail: "Voice service connection error",
-              }),
-            );
-          } catch {
-            // Ignore
-          }
+          sendJsonSafe(ws, {
+            type: "error",
+            message: "Voice service connection error",
+          });
         };
 
         voiceWs.onclose = () => {
@@ -173,31 +151,9 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
       onMessage(evt, ws) {
         const data = evt.data;
 
+        // Only accept binary audio frames — no JSON config messages in new protocol
         if (typeof data === "string") {
-          // JSON config message
-          try {
-            const parsed = JSON.parse(data);
-            config = {
-              systemPrompt: parsed.systemPrompt,
-              voice: parsed.voice,
-            };
-
-            // Set system prompt in conversation history
-            if (config.systemPrompt) {
-              conversationHistory = [
-                { role: "system", content: config.systemPrompt },
-              ];
-            }
-
-            ws.send(JSON.stringify({ type: "config_ack" }));
-          } catch {
-            ws.send(
-              JSON.stringify({
-                type: "error",
-                detail: "Invalid JSON config message",
-              }),
-            );
-          }
+          // Ignore text messages; protocol is binary-only from client
           return;
         }
 
@@ -233,8 +189,24 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
   });
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Send a JSON message to the client WebSocket. */
+function sendJson(ws: WSContext, data: Record<string, unknown>): void {
+  ws.send(JSON.stringify(data));
+}
+
+/** Send a JSON message, swallowing errors if the client has disconnected. */
+function sendJsonSafe(ws: WSContext, data: Record<string, unknown>): void {
+  try {
+    ws.send(JSON.stringify(data));
+  } catch {
+    // Client gone
+  }
+}
+
 /**
- * Run LLM inference and stream tokens back to the WebSocket client.
+ * Run LLM inference and stream response deltas back to the WebSocket client.
  * Returns the full response text.
  */
 async function runLlmAndStream(
@@ -256,6 +228,8 @@ async function runLlmAndStream(
     { role: "user" as const, content: userText },
   ];
 
+  sendJson(ws, { type: "response_start" });
+
   const result = streamText({
     model,
     messages,
@@ -265,31 +239,31 @@ async function runLlmAndStream(
 
   for await (const chunk of result.textStream) {
     fullText += chunk;
-    ws.send(JSON.stringify({ type: "llm_token", text: chunk }));
+    sendJson(ws, { type: "response_delta", text: chunk });
   }
 
-  ws.send(JSON.stringify({ type: "llm_done" }));
+  sendJson(ws, { type: "response_end", text: fullText });
 
   return fullText;
 }
 
 /**
- * Call the TTS voice service and stream the resulting audio back over WebSocket.
+ * Call the TTS voice service and stream the resulting audio back over WebSocket
+ * as base64-encoded chunks.
  */
 async function runTtsAndStream(
   ws: WSContext,
   text: string,
-  voice?: string,
 ): Promise<void> {
-  const voiceUrl = env.VOICE_URL;
+  const voicePort = env.VOICE_PORT;
 
   try {
-    const res = await fetch(`${voiceUrl}/speak`, {
+    const res = await fetch(`http://127.0.0.1:${voicePort}/speak`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         text,
-        voice: voice ?? "af_sky",
+        voice: "af_sky",
         speed: 1.0,
       }),
     });
@@ -297,34 +271,28 @@ async function runTtsAndStream(
     if (!res.ok) {
       const errorText = await res.text();
       console.error("[ws/chat-voice] TTS error:", errorText);
-      ws.send(
-        JSON.stringify({
-          type: "error",
-          detail: `TTS failed: ${errorText}`,
-        }),
-      );
+      sendJsonSafe(ws, {
+        type: "error",
+        message: `TTS failed: ${errorText}`,
+      });
       return;
     }
 
-    // Signal that TTS audio is coming
-    ws.send(JSON.stringify({ type: "tts_audio" }));
-
-    // Stream audio chunks back as binary
+    // Stream audio chunks back as base64-encoded JSON messages
     const reader = res.body?.getReader();
     if (!reader) return;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      ws.send(value);
+      const base64 = Buffer.from(value).toString("base64");
+      sendJson(ws, { type: "audio", data: base64 });
     }
   } catch (err) {
     console.error("[ws/chat-voice] TTS voice service error:", err);
-    ws.send(
-      JSON.stringify({
-        type: "error",
-        detail: "TTS voice service is not available",
-      }),
-    );
+    sendJsonSafe(ws, {
+      type: "error",
+      message: "TTS unavailable",
+    });
   }
 }
