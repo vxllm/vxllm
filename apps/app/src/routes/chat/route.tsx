@@ -124,11 +124,16 @@ function ChatLayout() {
         </div>
       ) : (
         <ResizablePanelGroup orientation="horizontal" className="h-full">
-          <ResizablePanel defaultSize={22} minSize={15} maxSize={35}>
+          <ResizablePanel
+            defaultSize={25}
+            minSize={18}
+            maxSize={40}
+            style={{ minWidth: "240px" }}
+          >
             <ChatSidebar />
           </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={78}>
+          <ResizableHandle className="w-0 border-0 bg-transparent after:bg-transparent hover:after:bg-accent/20" />
+          <ResizablePanel defaultSize={75} minSize={50}>
             <Outlet />
           </ResizablePanel>
         </ResizablePanelGroup>
