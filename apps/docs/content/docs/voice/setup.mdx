@@ -1,11 +1,11 @@
 ---
 title: Voice Setup
-description: Install and configure the VxLLM voice sidecar for speech-to-text and text-to-speech.
+description: Install and configure the VxLLM voice service for speech-to-text and text-to-speech.
 ---
 
 # Voice Setup
 
-VxLLM's voice pipeline runs as a separate Python sidecar process. It handles:
+VxLLM's voice pipeline runs as a separate Python voice service process. It handles:
 
 - **Speech-to-Text (STT)** — faster-whisper for high-speed transcription
 - **Text-to-Speech (TTS)** — Kokoro-82M for natural-sounding speech synthesis
@@ -22,14 +22,14 @@ VxLLM's voice pipeline runs as a separate Python sidecar process. It handles:
 
 ### Option 1: Automatic (Desktop App)
 
-The Tauri desktop app automatically downloads and manages the voice sidecar. No manual setup needed. Voice models are downloaded on first use.
+The Tauri desktop app automatically downloads and manages the voice service. No manual setup needed. Voice models are downloaded on first use.
 
 ### Option 2: Manual Setup
 
-Navigate to the voice sidecar directory and install dependencies:
+Navigate to the voice service directory and install dependencies:
 
 ```bash
-cd sidecar/voice
+cd apps/voice
 
 # Install uv (Python package manager)
 pip install uv
@@ -37,15 +37,15 @@ pip install uv
 # Install dependencies
 uv sync
 
-# Start the voice sidecar
+# Start the voice service
 uv run uvicorn app.main:app --host 127.0.0.1 --port 11501
 ```
 
-The sidecar will start on `http://localhost:11501`.
+The voice service will start on `http://localhost:11501`.
 
 ### Option 3: Docker
 
-The Docker Compose setup includes the voice sidecar automatically:
+The Docker Compose setup includes the voice service automatically:
 
 ```bash
 docker compose -f docker/docker-compose.yml up -d
@@ -55,19 +55,19 @@ See [Docker Deployment](/docs/deployment/docker) for details.
 
 ## Configuration
 
-The voice sidecar is configured via environment variables:
+The voice service is configured via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VOICE_SIDECAR_HOST` | `127.0.0.1` | Bind address |
-| `VOICE_SIDECAR_PORT` | `11501` | Sidecar port |
+| `VOICE_HOST` | `127.0.0.1` | Bind address |
+| `VOICE_PORT` | `11501` | Sidecar port |
 | `MODELS_DIR` | `~/.vxllm/models` | Directory for voice model files |
 
-The main VxLLM server connects to the sidecar via the `VOICE_SIDECAR_URL` environment variable (default: `http://localhost:11501`).
+The main VxLLM server connects to the voice service via the `VOICE_URL` environment variable (default: `http://localhost:11501`).
 
 ## Voice Models
 
-On first use, the sidecar downloads the required voice models:
+On first use, the voice service downloads the required voice models:
 
 | Model | Size | Purpose |
 |-------|------|---------|
@@ -79,7 +79,7 @@ Models are cached in the `MODELS_DIR` directory.
 
 ## API Endpoints
 
-The voice sidecar exposes these endpoints (proxied through the main server):
+The voice service exposes these endpoints (proxied through the main server):
 
 ### Transcription
 
@@ -121,7 +121,7 @@ The WebSocket endpoint performs continuous VAD + STT, sending transcription resu
 
 ## Troubleshooting
 
-### Voice sidecar not starting
+### Voice service not starting
 
 Ensure Python 3.11+ is installed and `uv` is available:
 

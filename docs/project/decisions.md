@@ -58,7 +58,7 @@ Two primary contenders emerged:
 - Smaller ecosystem than Python/FastAPI (fewer third-party packages)
 - Bun is newer, less battle-tested than mature Python frameworks
 - Team might have less familiarity (likely Python-heavy ML backgrounds)
-- Harder to integrate some Python ML libraries directly (but voice sidecar solves this)
+- Harder to integrate some Python ML libraries directly (but voice service solves this)
 
 ### Alternatives Considered
 
@@ -139,7 +139,7 @@ Two approaches exist for running LLM inference:
 
 ---
 
-## ADR-003: Separate Python Voice Sidecar for STT/TTS/VAD
+## ADR-003: Separate Python Voice Service for STT/TTS/VAD
 
 **Status:** Accepted
 **Date:** 2026-03-20
@@ -149,10 +149,10 @@ Two approaches exist for running LLM inference:
 VxLLM requires voice capabilities: Speech-to-Text (faster-whisper), Text-to-Speech (Kokoro-82M), and Voice Activity Detection (silero-vad). These have mature, high-quality Python implementations. Two approaches:
 
 1. **Integrated:** Include Python runtime in Bun app, import whisper/kokoro directly
-2. **Sidecar:** Separate Python FastAPI service on port 11501, communicate over HTTP
+2. **Voice Service:** Separate Python FastAPI service on port 11501, communicate over HTTP
 
 ### Decision
-**Run voice processing in a separate Python FastAPI sidecar service.**
+**Run voice processing in a separate Python FastAPI voice service.**
 
 ### Rationale
 
@@ -165,11 +165,11 @@ VxLLM requires voice capabilities: Speech-to-Text (faster-whisper), Text-to-Spee
 
 **Dependency Management:** Mixing Python + Node.js dependencies in one package.json is painful. Separate requirements.txt keeps voice clean.
 
-**Startup Time:** Voice sidecar can lazy-load models (load only when voice tab opened). Doesn't block main server startup.
+**Startup Time:** Voice service can lazy-load models (load only when voice tab opened). Doesn't block main server startup.
 
 **Language Appropriateness:** Python is better for numeric/ML work. Node.js is better for HTTP/async. Use each language where it shines.
 
-**Optional Feature:** Users uninterested in voice can disable it or run server without voice sidecar.
+**Optional Feature:** Users uninterested in voice can disable it or run server without voice service.
 
 ### Consequences
 
@@ -316,7 +316,7 @@ Two approaches considered:
 - Standards-compliant external APIs
 - Each tool optimized for its domain
 - Clear separation of concerns
-- Flexibility (could run voice sidecar as separate OpenAI-compatible server)
+- Flexibility (could run voice service as separate OpenAI-compatible server)
 
 **Negative:**
 - Two different API styles to maintain
@@ -684,7 +684,7 @@ Authentication strategy:
 |-----|----------|-----------|------------|
 | 001 | Hono+Bun | Speed, type safety, bundling | Very High |
 | 002 | In-process inference | Latency, simplicity | Very High |
-| 003 | Python voice sidecar | Best models + separation | High |
+| 003 | Python voice service | Best models + separation | High |
 | 004 | Metal not MLX | Cross-platform unification | High |
 | 005 | oRPC+Hono hybrid | Each for its strength | High |
 | 006 | Drizzle+SQLite | Scalability, type safety | Very High |

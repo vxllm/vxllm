@@ -125,7 +125,7 @@ curl http://localhost:11500/v1/chat/completions \
 | 🔌 | **OpenAI API** | Drop-in replacement. Chat completions, embeddings, audio. Any OpenAI SDK works. |
 | 🖥️ | **Desktop App** | Tauri 2 native app (~5MB). System tray, chat UI, model library, dashboard. |
 | ⌨️ | **CLI** | `serve`, `pull`, `run`, `list`, `ps`, `rm`, `info`. Interactive streaming chat. |
-| 🐳 | **Docker** | `docker pull datahase/vxllm`. Server + voice sidecar in one compose file. |
+| 🐳 | **Docker** | `docker pull datahase/vxllm`. Server + voice service in one compose file. |
 | 📊 | **Dashboard** | Real-time GPU/CPU/RAM gauges, metrics charts, Prometheus endpoint. |
 | 🔐 | **Server Mode** | API key auth, rate limiting, CORS. Deploy anywhere. |
 
@@ -154,7 +154,7 @@ vxllm info                     # Hardware profile + recommendations
 | 🎨 | [shadcn/ui](https://ui.shadcn.com) + [Tailwind v4](https://tailwindcss.com) | Components + styling |
 | 🖥️ | [Tauri 2](https://tauri.app) | Desktop app |
 | 📦 | [Turborepo](https://turbo.build/repo) | Monorepo build |
-| 🎙️ | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) + [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) | Voice (Python sidecar) |
+| 🎙️ | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) + [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) | Voice (Python voice service) |
 
 ## Project Structure
 
@@ -165,7 +165,8 @@ vxllm/
 │   ├── server/           # Hono API server
 │   ├── cli/              # Terminal CLI (citty)
 │   ├── docs/             # Documentation (Fumadocs)
-│   └── www/              # Marketing website (Next.js)
+│   ├── www/              # Marketing website (Next.js)
+│   └── voice/            # Python FastAPI (STT + TTS + VAD)
 ├── packages/
 │   ├── inference/        # node-llama-cpp engine wrapper
 │   ├── llama-provider/   # AI SDK language model adapter
@@ -174,8 +175,6 @@ vxllm/
 │   ├── ui/               # 38 shadcn/ui components
 │   ├── env/              # Validated env config (17 vars)
 │   └── config/           # Shared tsconfig/eslint/tailwind
-├── sidecar/
-│   └── voice/            # Python FastAPI (STT + TTS + VAD)
 ├── docker/               # Dockerfiles + compose
 └── models.json           # Curated model registry (5 models)
 ```
@@ -185,7 +184,7 @@ vxllm/
 ### Prerequisites
 
 - [Bun](https://bun.sh) >= 1.3
-- [Python](https://python.org) >= 3.11 (for voice sidecar, optional)
+- [Python](https://python.org) >= 3.11 (for voice service, optional)
 - [Rust](https://rustup.rs) (for Tauri desktop builds, optional)
 
 ### Setup
@@ -207,10 +206,10 @@ bun run dev:docs         # Docs site only → http://localhost:4000
 bun run dev:www          # Marketing site only → http://localhost:3000
 ```
 
-### Voice Sidecar (optional)
+### Voice Service (optional)
 
 ```bash
-cd sidecar/voice
+cd apps/voice
 uv sync
 uv run uvicorn app.main:app --port 11501
 ```
@@ -250,7 +249,7 @@ docker compose -f docker/docker-compose.yml up -d
 | `PORT` | `11500` | Server port |
 | `HOST` | `127.0.0.1` | Bind host (`0.0.0.0` for server mode) |
 | `MODELS_DIR` | `~/.vxllm/models` | Model storage directory |
-| `VOICE_SIDECAR_URL` | `http://localhost:11501` | Python voice sidecar |
+| `VOICE_URL` | `http://localhost:11501` | Python voice service |
 | `API_KEY` | — | Auth key (required when `HOST=0.0.0.0`) |
 | `DEFAULT_MODEL` | — | Auto-load model on startup |
 | `MAX_CONTEXT_SIZE` | `8192` | Default context window |

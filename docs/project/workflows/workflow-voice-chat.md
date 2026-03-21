@@ -8,7 +8,7 @@ Last Updated: 2026-03-20
 # Workflow: Voice — Full Voice Chat Loop
 
 ## Summary
-Orchestrates real-time voice conversation: user speaks, audio is streamed to Python sidecar for speech-to-text (Silero VAD + Faster-Whisper), text is sent to LLM (node-llama-cpp), response text is converted to speech (Kokoro TTS), and audio is streamed back for playback. WebSocket maintains persistent connection between frontend and voice sidecar.
+Orchestrates real-time voice conversation: user speaks, audio is streamed to Python voice service for speech-to-text (Silero VAD + Faster-Whisper), text is sent to LLM (node-llama-cpp), response text is converted to speech (Kokoro TTS), and audio is streamed back for playback. WebSocket maintains persistent connection between frontend and voice service.
 
 ## Trigger
 - User clicks/holds voice input button in chat UI (hold-to-talk mode)
@@ -18,14 +18,14 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
 ## Actors
 - **Frontend** (React, WebRTC getUserMedia, Web Audio API)
 - **Hono Server** (WebSocket proxy, inference orchestration)
-- **Python Voice Sidecar** (Silero VAD, Faster-Whisper STT, Kokoro TTS)
+- **Python Voice Service** (Silero VAD, Faster-Whisper STT, Kokoro TTS)
 - **node-llama-cpp** (LLM inference)
 - **Database** (messages table, audio storage)
 
 ## Preconditions
-- Server is running with voice sidecar enabled
+- Server is running with voice service enabled
 - User has granted microphone permission (browser-level)
-- Python sidecar is alive and responding to health checks
+- Python voice service is alive and responding to health checks
 - STT, LLM, and TTS models are downloaded and loaded
 - WebSocket endpoint `/ws/chat` is configured on Hono server
 
@@ -62,7 +62,7 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
     console.log("Voice WS connected");
   };
   ```
-- Hono server accepts connection, proxies to Python voice sidecar
+- Hono server accepts connection, proxies to Python voice service
 - On error → go to Failure Scenarios (Sidecar Unavailable)
 
 ### Step 4: Send Configuration Message
@@ -77,7 +77,7 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
     "language": "en"
   }
   ```
-- Python sidecar receives config and validates:
+- Python voice service receives config and validates:
   - Check if STT model (Faster-Whisper "base") is loaded
   - Check if TTS model (Kokoro "am" voice) is loaded
   - If missing, load from disk
@@ -99,11 +99,11 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
 
 - **VAD Mode**: Continuously:
   - Capture audio frames from microphone
-  - Send to sidecar for VAD processing (Step 6)
+  - Send to voice service for VAD processing (Step 6)
   - Once speech detected, proceed with streaming
 
 ### Step 6: VAD Processing (Silero VAD)
-- For each incoming audio chunk, Python sidecar runs:
+- For each incoming audio chunk, Python voice service runs:
   ```python
   vad = VoiceActivityDetector()
   is_speech = vad(audio_chunk)  # Binary: True/False
@@ -116,7 +116,7 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
   - After speech: is_speech=False for 20+ consecutive frames (0.5s) → end of speech detected
 
 ### Step 7: Partial STT Streaming
-- While user is speaking, Python sidecar streams partial transcriptions:
+- While user is speaking, Python voice service streams partial transcriptions:
   ```json
   {
     "type": "stt_partial",
@@ -131,7 +131,7 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
 
 ### Step 8: End of Speech Detection
 - VAD detects silence (20+ frames with is_speech=False) after speech period
-- Python sidecar sends final STT message:
+- Python voice service sends final STT message:
   ```json
   {
     "type": "stt_final",
@@ -167,7 +167,7 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
 - LLM begins generating response tokens
 
 ### Step 10: Stream LLM Response Tokens
-- As LLM generates tokens, Hono server streams back to sidecar:
+- As LLM generates tokens, Hono server streams back to voice service:
   ```json
   {
     "type": "llm_token",
@@ -175,13 +175,13 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
     "isFinal": false
   }
   ```
-- Python sidecar buffers tokens and detects sentence boundaries
+- Python voice service buffers tokens and detects sentence boundaries
 - When complete sentence detected (period, question mark, or 10+ words):
   - Accumulate sentence text
   - Send to TTS for processing
 
 ### Step 11: TTS Synthesis in Sidecar
-- Python sidecar runs Kokoro TTS on complete sentence:
+- Python voice service runs Kokoro TTS on complete sentence:
   ```python
   tts = KokoroTTS(model="kokoro-en", voice="am")
   audio_bytes, sr = tts.synthesize("I'm doing great, thank you for asking!")
@@ -352,28 +352,28 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
   - Disable voice button permanently (until restart)
   - Suggestion: "Plug in a microphone or use a device with built-in audio"
 
-### Voice Sidecar Unavailable
-- **Symptom**: WebSocket connection fails or sidecar crashes
+### Voice Service Unavailable
+- **Symptom**: WebSocket connection fails or voice service crashes
 - **Detection**: WebSocket onerror event or config_ack never received (timeout 5s)
 - **Response**:
   - Show banner: "Voice is unavailable — please try text chat"
   - Log error with timestamp
   - Disable voice button, show setup link: "Enable voice in Settings"
-  - Check sidecar health on server:
+  - Check voice service health on server:
     ```
-    GET /health/voice-sidecar
+    GET /health/voice
     Response: {"status": "down", "lastSeen": "2026-03-20T10:23:15Z"}
     ```
-  - Alert admin if sidecar is down
+  - Alert admin if voice service is down
 
 - **Recovery**:
-  - Admin restarts Python voice sidecar
+  - Admin restarts Python voice service
   - User waits 10 seconds and retries
   - If still down, suggest fallback to text chat
 
 ### STT Model Not Loaded
-- **Symptom**: Python sidecar cannot load Faster-Whisper model (corrupted file, OOM)
-- **Detection**: sidecar returns error in config_ack: `{"ready": false, "error": "STT model not found"}`
+- **Symptom**: Python voice service cannot load Faster-Whisper model (corrupted file, OOM)
+- **Detection**: voice service returns error in config_ack: `{"ready": false, "error": "STT model not found"}`
 - **Response**:
   - Show warning: "Voice unavailable: Speech-to-text model missing"
   - Return to text-only chat
@@ -389,7 +389,7 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
   - Show message: "Response generated but audio unavailable"
 
 ### WebSocket Connection Lost Mid-Stream
-- **Symptom**: Network interruption, sidecar crash, browser tab backgrounded
+- **Symptom**: Network interruption, voice service crash, browser tab backgrounded
 - **Detection**: ws.onclose or ws.onerror event
 - **Response**:
   - Stop audio capture (close microphone stream)
@@ -529,12 +529,12 @@ Orchestrates real-time voice conversation: user speaks, audio is streamed to Pyt
 - **models** (check if TTS/STT models loaded)
 
 ### In-Memory State
-- **WebSocket**: Persistent connection from frontend to sidecar
+- **WebSocket**: Persistent connection from frontend to voice service
 - **Audio Buffers**: PCM frames queued in Web Audio API
 - **Message History**: conversation context passed to LLM
 
 ## Related Documentation
-- `/docs/voice/setup.md` — Voice sidecar installation and configuration
+- `/docs/voice/setup.md` — Voice service installation and configuration
 - `/docs/voice/models.md` — STT, TTS model options and downloads
 - `/docs/api/websocket.md` — WebSocket protocol for voice endpoint
 - `workflow-inference-chat.md` — LLM inference (called from within voice loop)

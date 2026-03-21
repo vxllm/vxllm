@@ -155,19 +155,19 @@ Model size (GB) × precision_factor + KV cache (context × 2.5MB/layer)
 ### STT
 **Full Name:** Speech-To-Text
 **Definition:** Converting spoken audio to text transcription.
-**VxLLM Implementation:** faster-whisper running in Python voice sidecar
+**VxLLM Implementation:** faster-whisper running in Python voice service
 **Use Case:** User speaks, audio converted to text, sent to LLM for processing
 
 ### TTS
 **Full Name:** Text-To-Speech
 **Definition:** Converting text to spoken audio.
-**VxLLM Implementation:** Kokoro-82M running in Python voice sidecar
+**VxLLM Implementation:** Kokoro-82M running in Python voice service
 **Use Case:** Model's text response converted to audio and played back to user
 
 ### VAD
 **Full Name:** Voice Activity Detection
 **Definition:** Detecting when a user is speaking vs. silent (pause).
-**VxLLM Implementation:** silero-vad running in Python voice sidecar
+**VxLLM Implementation:** silero-vad running in Python voice service
 **Use Case:** Auto-stop recording when user finishes speaking (improves UX)
 
 ### Sidecar
@@ -262,12 +262,12 @@ Model size (GB) × precision_factor + KV cache (context × 2.5MB/layer)
 
 ### Docker
 **Definition:** Containerization platform for packaging app with dependencies into isolated environments.
-**VxLLM Use:** Multi-service compose (server + voice sidecar) for reproducible deployments
+**VxLLM Use:** Multi-service compose (server + voice service) for reproducible deployments
 **Benefits:** Works on any OS, no dependency conflicts, easier scaling
 
 ### Monorepo
 **Definition:** A single Git repository containing multiple projects/packages.
-**VxLLM Structure:** apps (web, server, cli), packages (ui, db, api, inference, etc.), sidecar (voice), docker
+**VxLLM Structure:** apps (web, server, cli, voice), packages (ui, db, api, inference, etc.), docker
 **Tool:** Turborepo for task orchestration and caching
 
 ## Development & Operations

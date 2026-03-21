@@ -36,7 +36,7 @@ const features = [
     icon: Container,
     title: "Docker Ready",
     description:
-      "docker pull datahase/vxllm. Deploy the server and voice sidecar anywhere with one command.",
+      "docker pull datahase/vxllm. Deploy the server and voice service anywhere with one command.",
   },
 ];
 

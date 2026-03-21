@@ -29,7 +29,7 @@ Step-by-step workflow documentation for all major user actions in VxLLM.
 
 | Workflow | Trigger | Actors | Link |
 |----------|---------|--------|------|
-| Voice Chat | User activates voice mode in UI | User, Browser Mic, WebSocket, Voice Sidecar, node-llama-cpp | [→](./workflow-voice-chat.md) |
+| Voice Chat | User activates voice mode in UI | User, Browser Mic, WebSocket, Voice Service, node-llama-cpp | [→](./workflow-voice-chat.md) |
 
 ### Settings
 

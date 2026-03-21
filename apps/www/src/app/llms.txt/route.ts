@@ -17,7 +17,7 @@ VxLLM is a unified model server that runs LLM, STT (Speech-to-Text), and TTS (Te
 - CLI: serve, pull, run, list, ps, rm, info
 - Model downloads from HuggingFace with progress tracking
 - Dashboard with hardware monitoring and inference metrics
-- Docker deployment (server + voice sidecar)
+- Docker deployment (server + voice service)
 - API key authentication with rate limiting
 
 ## Tech Stack

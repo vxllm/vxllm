@@ -2,7 +2,7 @@
 
 Attempts to load Kokoro for high-quality neural TTS.  If Kokoro is
 not installed, falls back to a silent placeholder so the rest of the
-sidecar (STT, VAD, health checks) continues to work.
+voice service (STT, VAD, health checks) continues to work.
 """
 
 from __future__ import annotations

@@ -11,7 +11,7 @@ pub fn get_server_status(state: tauri::State<ProcessManager>) -> serde_json::Val
 #[tauri::command]
 pub fn get_voice_status(state: tauri::State<ProcessManager>) -> serde_json::Value {
     serde_json::json!({
-        "running": state.is_sidecar_running(),
+        "running": state.is_voice_running(),
         "port": 11501
     })
 }
@@ -23,5 +23,5 @@ pub fn restart_server_cmd(state: tauri::State<ProcessManager>) -> Result<(), Str
 
 #[tauri::command]
 pub fn restart_voice_cmd(state: tauri::State<ProcessManager>) -> Result<(), String> {
-    state.restart_sidecar()
+    state.restart_voice()
 }

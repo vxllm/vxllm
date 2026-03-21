@@ -13,7 +13,7 @@ pub fn run() {
             // Spawn child processes
             let pm = ProcessManager::new();
             let _ = pm.spawn_server();
-            let _ = pm.spawn_sidecar();
+            let _ = pm.spawn_voice();
             app.manage(pm);
 
             // Setup system tray

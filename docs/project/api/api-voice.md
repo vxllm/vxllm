@@ -7,10 +7,10 @@
 
 ## Overview
 
-The Voice API provides endpoints for speech-to-text (STT), text-to-speech (TTS), and real-time conversational AI. All audio endpoints are raw Hono routes that proxy requests to a Python voice sidecar service at `VOICE_SIDECAR_URL`. The API supports both HTTP (file upload/response) and WebSocket (real-time streaming) transports.
+The Voice API provides endpoints for speech-to-text (STT), text-to-speech (TTS), and real-time conversational AI. All audio endpoints are raw Hono routes that proxy requests to a Python voice service service at `VOICE_URL`. The API supports both HTTP (file upload/response) and WebSocket (real-time streaming) transports.
 
 **Auth:** API key required (localhost exempt)
-**Sidecar:** Python FastAPI service at `process.env.VOICE_SIDECAR_URL`
+**Sidecar:** Python FastAPI service at `process.env.VOICE_URL`
 
 ---
 
@@ -674,7 +674,7 @@ interface WebSocketErrorMessage {
 | `file_too_large` | 413 | Audio file exceeds maximum size. |
 | `unsupported_format` | 400 | Audio format not supported. |
 | `model_not_found` | 404 | STT or TTS model not found. |
-| `sidecar_unavailable` | 503 | Voice sidecar service is unavailable. |
+| `voice_service_unavailable` | 503 | Voice service service is unavailable. |
 | `invalid_request` | 400 | Invalid request parameters. |
 
 ---

@@ -47,15 +47,15 @@ Complete local AI server with full voice support, desktop integration, and OpenA
 - Conversation deletion with confirmation
 
 #### Voice Support
-- **Speech-to-Text (STT):** faster-whisper on Python sidecar (port 11501)
+- **Speech-to-Text (STT):** faster-whisper on Python voice service (port 11501)
   - Multi-language support
   - Automatic language detection
   - Runs on CPU or GPU
-- **Text-to-Speech (TTS):** Kokoro-82M on Python sidecar
+- **Text-to-Speech (TTS):** Kokoro-82M on Python voice service
   - Multiple voice options
   - Speed and pitch control
   - Streaming audio output
-- **Voice Activity Detection (VAD):** silero-vad on Python sidecar
+- **Voice Activity Detection (VAD):** silero-vad on Python voice service
   - Real-time silence detection
   - Auto-stop recording
   - Low latency (<50ms)
@@ -121,7 +121,7 @@ Complete local AI server with full voice support, desktop integration, and OpenA
   - `DATABASE_URL` → SQLite connection
   - `PORT`, `HOST` → Server binding
   - `MODELS_DIR` → Model download directory
-  - `VOICE_SIDECAR_URL` → Python sidecar endpoint
+  - `VOICE_URL` → Python voice service endpoint
   - `API_KEY` → Required for server mode (0.0.0.0)
   - `LOG_LEVEL` → debug, info, warn, error
   - `DEFAULT_MODEL` → Model to load at startup
@@ -303,13 +303,13 @@ bun run web
 - `LOG_LEVEL` env var controls verbosity
 - Server startup logs model loading, VRAM usage
 - Conversation metrics logged (tokens, latency)
-- Voice sidecar logs STT/TTS performance
+- Voice service logs STT/TTS performance
 - Browser DevTools for frontend debugging
 - SQLite browser tools for database inspection
 
 ### Development
 
-- `bun dev` → Full stack development (server + web + voice sidecar)
+- `bun dev` → Full stack development (server + web + voice service)
 - `bun db:generate` → Regenerate Drizzle types
 - `bun db:migrate` → Apply database migrations
 - `bun lint` → ESLint + TypeScript check

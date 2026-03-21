@@ -31,23 +31,23 @@ interface VoiceChatConfig {
 /**
  * WS /ws/chat
  *
- * Full voice chat loop: audio -> STT (via sidecar) -> LLM -> TTS (via sidecar) -> audio.
+ * Full voice chat loop: audio -> STT (via voice service) -> LLM -> TTS (via voice service) -> audio.
  *
  * Flow:
  * 1. Client connects, sends a JSON config message.
  * 2. Client streams binary PCM audio frames.
- * 3. Audio is proxied to the sidecar STT WebSocket.
- * 4. When sidecar returns a transcription, we:
+ * 3. Audio is proxied to the voice service STT WebSocket.
+ * 4. When voice service returns a transcription, we:
  *    a. Send { type: "stt_result", text } to the client.
  *    b. Run LLM inference, streaming tokens as { type: "llm_token", text }.
  *    c. Send { type: "llm_done" } when generation finishes.
- *    d. Call TTS sidecar with the full response, stream audio back.
+ *    d. Call TTS voice service with the full response, stream audio back.
  *    e. Send { type: "turn_end" }.
  * 5. Client can send more audio for the next turn.
  */
 export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
   return upgradeWebSocket(() => {
-    let sidecarWs: WebSocket | null = null;
+    let voiceWs: WebSocket | null = null;
     let config: VoiceChatConfig = {};
     let conversationHistory: Array<{
       role: "system" | "user" | "assistant";
@@ -59,18 +59,18 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
       onOpen(_evt, ws) {
         console.log("[ws/chat-voice] Client connected");
 
-        // Connect to the sidecar STT WebSocket
-        const sidecarUrl = env.VOICE_SIDECAR_URL.replace(/^http/, "ws");
-        sidecarWs = new WebSocket(`${sidecarUrl}/stream`);
-        sidecarWs.binaryType = "arraybuffer";
+        // Connect to the voice service STT WebSocket
+        const voiceUrl = env.VOICE_URL.replace(/^http/, "ws");
+        voiceWs = new WebSocket(`${voiceUrl}/stream`);
+        voiceWs.binaryType = "arraybuffer";
 
-        sidecarWs.onopen = () => {
+        voiceWs.onopen = () => {
           console.log(
-            "[ws/chat-voice] Connected to voice sidecar for STT",
+            "[ws/chat-voice] Connected to voice service for STT",
           );
         };
 
-        sidecarWs.onmessage = async (event: MessageEvent) => {
+        voiceWs.onmessage = async (event: MessageEvent) => {
           try {
             if (typeof event.data !== "string") return;
 
@@ -145,19 +145,19 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
             }
           } catch (err) {
             console.error(
-              "[ws/chat-voice] Error processing sidecar message:",
+              "[ws/chat-voice] Error processing voice service message:",
               err,
             );
           }
         };
 
-        sidecarWs.onerror = () => {
-          console.error("[ws/chat-voice] Sidecar WebSocket error");
+        voiceWs.onerror = () => {
+          console.error("[ws/chat-voice] Voice service WebSocket error");
           try {
             ws.send(
               JSON.stringify({
                 type: "error",
-                detail: "Voice sidecar connection error",
+                detail: "Voice service connection error",
               }),
             );
           } catch {
@@ -165,8 +165,8 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
           }
         };
 
-        sidecarWs.onclose = () => {
-          console.log("[ws/chat-voice] Sidecar WebSocket closed");
+        voiceWs.onclose = () => {
+          console.log("[ws/chat-voice] Voice service WebSocket closed");
         };
       },
 
@@ -201,22 +201,22 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
           return;
         }
 
-        // Binary audio data -> forward to sidecar STT
-        if (sidecarWs && sidecarWs.readyState === WebSocket.OPEN) {
+        // Binary audio data -> forward to voice service STT
+        if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
           if (data instanceof ArrayBuffer) {
-            sidecarWs.send(data);
+            voiceWs.send(data);
           } else if (data instanceof Blob) {
             data.arrayBuffer().then((buf) => {
-              sidecarWs?.send(buf);
+              voiceWs?.send(buf);
             });
           }
         }
       },
 
       onClose() {
-        if (sidecarWs) {
-          sidecarWs.close();
-          sidecarWs = null;
+        if (voiceWs) {
+          voiceWs.close();
+          voiceWs = null;
         }
         conversationHistory = [];
         console.log("[ws/chat-voice] Client disconnected");
@@ -224,9 +224,9 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
 
       onError(evt) {
         console.error("[ws/chat-voice] WebSocket error:", evt);
-        if (sidecarWs) {
-          sidecarWs.close();
-          sidecarWs = null;
+        if (voiceWs) {
+          voiceWs.close();
+          voiceWs = null;
         }
       },
     };
@@ -274,17 +274,17 @@ async function runLlmAndStream(
 }
 
 /**
- * Call the TTS sidecar and stream the resulting audio back over WebSocket.
+ * Call the TTS voice service and stream the resulting audio back over WebSocket.
  */
 async function runTtsAndStream(
   ws: WSContext,
   text: string,
   voice?: string,
 ): Promise<void> {
-  const sidecarUrl = env.VOICE_SIDECAR_URL;
+  const voiceUrl = env.VOICE_URL;
 
   try {
-    const res = await fetch(`${sidecarUrl}/speak`, {
+    const res = await fetch(`${voiceUrl}/speak`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -319,11 +319,11 @@ async function runTtsAndStream(
       ws.send(value);
     }
   } catch (err) {
-    console.error("[ws/chat-voice] TTS sidecar error:", err);
+    console.error("[ws/chat-voice] TTS voice service error:", err);
     ws.send(
       JSON.stringify({
         type: "error",
-        detail: "TTS sidecar is not available",
+        detail: "TTS voice service is not available",
       }),
     );
   }

@@ -1,11 +1,11 @@
 ---
 title: Docker Deployment
-description: Deploy VxLLM with Docker Compose — server and voice sidecar.
+description: Deploy VxLLM with Docker Compose — server and voice service.
 ---
 
 # Docker Deployment
 
-VxLLM provides Docker images for the server and voice sidecar, orchestrated with Docker Compose.
+VxLLM provides Docker images for the server and voice service, orchestrated with Docker Compose.
 
 ## Quick Start
 
@@ -20,7 +20,7 @@ The server will be available at `http://localhost:11500`.
 
 ### Using Docker Compose
 
-For the full stack (server + voice sidecar), create a `docker-compose.yml`:
+For the full stack (server + voice service), create a `docker-compose.yml`:
 
 ```yaml
 services:
@@ -30,7 +30,7 @@ services:
       - "11500:11500"
     environment:
       HOST: "0.0.0.0"
-      VOICE_SIDECAR_URL: "http://voice:11501"
+      VOICE_URL: "http://voice:11501"
       DATABASE_URL: "file:/data/local.db"
       MODELS_DIR: "/data/models"
       API_KEY: "${API_KEY:-}"
@@ -45,7 +45,7 @@ services:
     ports:
       - "11501:11501"
     environment:
-      VOICE_SIDECAR_HOST: "0.0.0.0"
+      VOICE_HOST: "0.0.0.0"
       MODELS_DIR: "/data/models"
     volumes:
       - vxllm-data:/data
@@ -67,7 +67,7 @@ Docker Compose starts two services:
 | Service | Port | Description |
 |---------|------|-------------|
 | `server` | 11500 | Bun/Hono server with LLM inference |
-| `voice` | 11501 | Python sidecar for STT/TTS |
+| `voice` | 11501 | Python voice service for STT/TTS |
 
 Both services share a `vxllm-data` Docker volume for the SQLite database and downloaded models.
 
@@ -82,7 +82,7 @@ API_KEY=vx-your-secret-key-here
 # Server port
 PORT=11500
 
-# Voice sidecar port
+# Voice service port
 VOICE_PORT=11501
 
 # Allowed CORS origins
@@ -142,7 +142,7 @@ services:
       - "${PORT:-11500}:11500"
     environment:
       HOST: "0.0.0.0"
-      VOICE_SIDECAR_URL: "http://voice:11501"
+      VOICE_URL: "http://voice:11501"
       DATABASE_URL: "file:/data/local.db"
       MODELS_DIR: "/data/models"
       API_KEY: "${API_KEY:-}"
@@ -157,7 +157,7 @@ services:
     ports:
       - "${VOICE_PORT:-11501}:11501"
     environment:
-      VOICE_SIDECAR_HOST: "0.0.0.0"
+      VOICE_HOST: "0.0.0.0"
       MODELS_DIR: "/data/models"
     volumes:
       - vxllm-data:/data

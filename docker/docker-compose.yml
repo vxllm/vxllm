@@ -7,7 +7,7 @@ services:
       - "${PORT:-11500}:11500"
     environment:
       HOST: "0.0.0.0"
-      VOICE_SIDECAR_URL: "http://voice:11501"
+      VOICE_URL: "http://voice:11501"
       DATABASE_URL: "file:/data/local.db"
       MODELS_DIR: "/data/models"
       API_KEY: "${API_KEY:-}"
@@ -24,7 +24,7 @@ services:
     ports:
       - "${VOICE_PORT:-11501}:11501"
     environment:
-      VOICE_SIDECAR_HOST: "0.0.0.0"
+      VOICE_HOST: "0.0.0.0"
       MODELS_DIR: "/data/models"
     volumes:
       - vxllm-data:/data

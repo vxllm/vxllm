@@ -72,7 +72,7 @@ app.route("/v1", createCompletionsRoute({ modelManager }));
 app.route("/v1", createEmbeddingsRoute({ modelManager }));
 app.route("/v1", createModelsRoute());
 
-// ── Audio / Voice API (proxied to Python sidecar) ────────────────────────
+// ── Audio / Voice API (proxied to Python voice service) ────────────────────────
 app.route("/v1/audio", createAudioRoutes());
 
 // ── Model Management API ──────────────────────────────────────────────────────

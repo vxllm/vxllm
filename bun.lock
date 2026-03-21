@@ -12,7 +12,7 @@
       "devDependencies": {
         "@types/bun": "catalog:",
         "@vxllm/config": "workspace:*",
-        "docs": "^0.3.2-canary.0",
+        "docs": "workspace:*",
         "geist": "^1.7.0",
         "turbo": "^2.8.12",
         "typescript": "^5",

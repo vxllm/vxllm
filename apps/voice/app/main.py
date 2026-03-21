@@ -1,4 +1,4 @@
-"""VxLLM Voice Sidecar — FastAPI application."""
+"""VxLLM Voice Service — FastAPI application."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ logger = logging.getLogger("vxllm-voice")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Preload models on startup so the first request is fast."""
-    logger.info("Starting VxLLM Voice Sidecar …")
+    logger.info("Starting VxLLM Voice Service …")
 
     # Load engines — each handles its own errors gracefully.
     try:
@@ -44,13 +44,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         logger.warning("VAD engine failed to preload — will retry on first request.")
 
-    logger.info("Voice sidecar ready on http://%s:%d", HOST, PORT)
+    logger.info("Voice service ready on http://%s:%d", HOST, PORT)
     yield
-    logger.info("Shutting down Voice Sidecar.")
+    logger.info("Shutting down Voice Service.")
 
 
 app = FastAPI(
-    title="VxLLM Voice Sidecar",
+    title="VxLLM Voice Service",
     version="0.1.0",
     description="STT, TTS, and VAD services for VxLLM",
     lifespan=lifespan,

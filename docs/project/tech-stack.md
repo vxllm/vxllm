@@ -29,7 +29,7 @@ VxLLM is built on a modern, type-safe stack optimized for fast local AI inferenc
 - `bun build` for production builds
 - Workspace-aware `bun install`
 - Native HTTP server capabilities
-- Process spawning for voice sidecar management
+- Process spawning for voice service management
 
 ---
 
@@ -574,15 +574,15 @@ VxLLM is built on a modern, type-safe stack optimized for fast local AI inferenc
 - High accuracy
 - Works on CPU
 
-**Integration:** Runs in voice sidecar, signals end-of-speech to frontend
+**Integration:** Runs in voice service, signals end-of-speech to frontend
 
-### FastAPI + Uvicorn (Python Voice Sidecar)
+### FastAPI + Uvicorn (Python Voice Service)
 
 **Version:** Latest
 **Category:** Voice Processing Server
 **Purpose:** Isolated Python service for STT/TTS/VAD processing
 
-**Location:** `sidecar/voice`
+**Location:** `apps/voice`
 
 **Why FastAPI:**
 - Type-safe with Pydantic
@@ -592,7 +592,7 @@ VxLLM is built on a modern, type-safe stack optimized for fast local AI inferenc
 
 **Code Size:** ~150 lines
 
-**Port:** 11501 (configurable via `VOICE_SIDECAR_URL`)
+**Port:** 11501 (configurable via `VOICE_URL`)
 
 **Endpoints:**
 - `POST /transcribe` → Speech to text
@@ -629,7 +629,7 @@ VxLLM is built on a modern, type-safe stack optimized for fast local AI inferenc
 | `PORT` | No | `11500` | Server port (HTTP) |
 | `HOST` | No | `127.0.0.1` | Server bind address (127.0.0.1 for localhost, 0.0.0.0 for network) |
 | `MODELS_DIR` | No | `~/.vxllm/models` | Directory for downloaded GGUF models |
-| `VOICE_SIDECAR_URL` | No | `http://localhost:11501` | Python voice sidecar address |
+| `VOICE_URL` | No | `http://localhost:11501` | Python voice service address |
 | `API_KEY` | No | None | Required if `HOST` is not 127.0.0.1 (server mode) |
 | `LOG_LEVEL` | No | `info` | Logging verbosity (debug, info, warn, error) |
 | `DEFAULT_MODEL` | No | `mistral-7b-v0.3` | Model to load at startup |
@@ -715,7 +715,7 @@ bun type-check       # TypeScript full check
 - Single command to start full stack
 - Volume mounts for model sharing
 - Network isolation
-- Easy scaling (e.g., multiple voice sidecars)
+- Easy scaling (e.g., multiple voice services)
 
 **Build:**
 ```bash
@@ -771,8 +771,16 @@ vxllm/
 │   │   ├── content/            # Markdown docs
 │   │   └── package.json
 │   │
-│   └── www/                    # Marketing website (Next.js)
-│       └── package.json
+│   ├── www/                    # Marketing website (Next.js)
+│   │   └── package.json
+│   │
+│   └── voice/                  # Python FastAPI voice service
+│       ├── main.py             # FastAPI app
+│       ├── transcribe.py       # faster-whisper integration
+│       ├── synthesize.py       # Kokoro TTS integration
+│       ├── vad.py              # silero-vad integration
+│       ├── requirements.txt
+│       └── Dockerfile
 │
 ├── packages/
 │   ├── inference/              # node-llama-cpp wrapper
@@ -838,18 +846,9 @@ vxllm/
 │       ├── tsconfig.base.json
 │       └── package.json
 │
-├── sidecar/
-│   └── voice/                  # Python FastAPI voice service
-│       ├── main.py             # FastAPI app
-│       ├── transcribe.py       # faster-whisper integration
-│       ├── synthesize.py       # Kokoro TTS integration
-│       ├── vad.py              # silero-vad integration
-│       ├── requirements.txt
-│       └── Dockerfile
-│
 ├── docker/
 │   ├── Dockerfile.server       # Hono server container
-│   ├── Dockerfile.voice        # Python voice sidecar container
+│   ├── Dockerfile.voice        # Python voice service container
 │   └── docker-compose.yml
 │
 ├── models.json                 # Curated model registry

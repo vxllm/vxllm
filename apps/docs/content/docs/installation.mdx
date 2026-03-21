@@ -61,7 +61,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 | Windows (x86_64) | Download from releases |
 | Linux (x86_64 / ARM64) | Download from releases |
 
-The desktop app bundles the server and voice sidecar. No additional setup required.
+The desktop app bundles the server and voice service. No additional setup required.
 
 ## Docker
 
@@ -72,7 +72,7 @@ docker pull datahase/vxllm
 docker run -p 11500:11500 datahase/vxllm
 ```
 
-Or use Docker Compose for the full stack (server + voice sidecar):
+Or use Docker Compose for the full stack (server + voice service):
 
 ```bash
 git clone https://github.com/datahase/vxllm.git
@@ -81,7 +81,7 @@ cd vxllm
 # Copy and configure environment
 cp docker/.env.example docker/.env
 
-# Start server and voice sidecar
+# Start server and voice service
 docker compose -f docker/docker-compose.yml up -d
 ```
 

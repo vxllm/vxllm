@@ -9,7 +9,7 @@ Last Updated: 2026-03-20
 
 ## Summary
 
-Real-time voice input/output via Python sidecar running faster-whisper (Speech-to-Text), Kokoro-82M (Text-to-Speech), and silero-vad (Voice Activity Detection). Enables hands-free voice chat with local LLMs through WebSocket streams, hold-to-talk UI, and OpenAI-compatible `/v1/audio/*` endpoints.
+Real-time voice input/output via Python voice service running faster-whisper (Speech-to-Text), Kokoro-82M (Text-to-Speech), and silero-vad (Voice Activity Detection). Enables hands-free voice chat with local LLMs through WebSocket streams, hold-to-talk UI, and OpenAI-compatible `/v1/audio/*` endpoints.
 
 ## Problem Statement
 
@@ -82,8 +82,8 @@ VxLLM must deliver a seamless voice experience: press button, speak naturally, s
 ## Requirements
 
 ### Must Have
-1. Python sidecar (FastAPI) running separately from Hono server
-2. Hono server proxies all `/v1/audio/*` and `/ws/*` voice routes to sidecar via HTTP/WebSocket
+1. Python voice service (FastAPI) running separately from Hono server
+2. Hono server proxies all `/v1/audio/*` and `/ws/*` voice routes to voice service via HTTP/WebSocket
 3. STT file upload endpoint: POST `/v1/audio/transcriptions` accepting WAV/MP3/OGG, returning JSON with text
 4. STT real-time WebSocket: `WS /v1/audio/stream/transcribe` accepting audio chunks, returning partial + final transcriptions
 5. TTS endpoint: POST `/v1/audio/speech` accepting text + voice_id + speed, returning streaming WAV audio
@@ -94,7 +94,7 @@ VxLLM must deliver a seamless voice experience: press button, speak naturally, s
 10. Voice selector: Dropdown with Kokoro voice options (e.g., "af_heart", "am_adam", "bf_emma", etc.)
 11. Whisper model selector: Dropdown (tiny, base, small, medium) with note on speed/accuracy trade-off
 12. Transcription display: Text box showing live partial transcription while recording
-13. Error handling: Graceful fallback if sidecar unavailable; show "Voice features unavailable" message
+13. Error handling: Graceful fallback if voice service unavailable; show "Voice features unavailable" message
 14. Audio format: Input 16kHz mono PCM via Web Audio API, Whisper expects 16kHz, TTS output 24kHz mono WAV
 
 ### Should Have
@@ -180,7 +180,7 @@ VxLLM must deliver a seamless voice experience: press button, speak naturally, s
 
 ### Error States
 - "Microphone not available. Check permissions."
-- "Voice sidecar not running. Restart app?"
+- "Voice service not running. Restart app?"
 - "Transcription failed: No speech detected. Try again?"
 - "Audio playback failed. Check speaker or select different device."
 
@@ -190,7 +190,7 @@ VxLLM must deliver a seamless voice experience: press button, speak naturally, s
 
 ## Business Rules
 
-1. **Sidecar Requirement**: Voice features only available if Python sidecar is running; check health on app start
+1. **Sidecar Requirement**: Voice features only available if Python voice service is running; check health on app start
 2. **Model Downloads**: Whisper and Kokoro models downloaded on first voice feature use; auto-handled transparently
 3. **Audio Format**: Web Audio API captures at 16kHz mono PCM; Whisper input expects 16kHz; TTS output 24kHz mono WAV
 4. **WebSocket Proxy**: All voice WebSocket connections go through Hono → Sidecar proxy; Hono does no processing
@@ -264,11 +264,11 @@ VxLLM must deliver a seamless voice experience: press button, speak naturally, s
 
 ### Internal (Hono Server)
 - Hono: HTTP server and WebSocket proxy
-- HTTP client for sidecar communication
+- HTTP client for voice service communication
 - Web Audio API bridge (client-side, via browser)
 
 ### Internal (Python Sidecar)
-- **FastAPI**: Web framework for sidecar
+- **FastAPI**: Web framework for voice service
 - **faster-whisper**: STT backend (optimized Whisper via CTransformers)
 - **Kokoro-82M**: TTS backend (text-to-speech generation)
 - **silero-vad**: Voice Activity Detection
@@ -282,7 +282,7 @@ VxLLM must deliver a seamless voice experience: press button, speak naturally, s
 - **HuggingFace Hub**: Whisper and Kokoro model downloads (same as model-management)
 
 ### Runtime
-- Python 3.10+ for sidecar
+- Python 3.10+ for voice service
 - Node.js/Bun for Hono server
 - Modern browser with Web Audio API support (Chrome, Firefox, Safari 14.1+)
 - Microphone and speaker hardware

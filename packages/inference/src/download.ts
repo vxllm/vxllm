@@ -220,7 +220,7 @@ export class DownloadManager {
         );
       } else {
         // For non-GGUF models (whisper, kokoro), mark as "downloaded" with the repo reference
-        // Actual model loading is handled by the Python sidecar, so we just record the intent
+        // Actual model loading is handled by the Python voice service, so we just record the intent
         await this.markCompleted(modelId, modelInfo, progress, null);
       }
     } catch (err) {

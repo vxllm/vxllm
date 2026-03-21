@@ -14,13 +14,13 @@ VxLLM is an open-source, self-hostable AI model server that runs LLM, STT (Speec
 - **Voice Pipeline** — Speech-to-text (faster-whisper), text-to-speech (Kokoro), and voice activity detection (silero-vad).
 - **Desktop App** — Tauri 2 native application with system tray, chat UI, and model management.
 - **CLI** — Developer-friendly commands: `serve`, `pull`, `run`, `list`, `ps`, `rm`.
-- **Docker Ready** — Single `docker compose up` to deploy server and voice sidecar.
+- **Docker Ready** — Single `docker compose up` to deploy server and voice service.
 
 ## Architecture Overview
 
 VxLLM runs as two processes:
 
 1. **Bun/Hono Server** (port 11500) — Handles LLM inference, OpenAI-compatible API, model management, and the web dashboard.
-2. **Python Voice Sidecar** (port 11501, optional) — Handles STT, TTS, and real-time voice streaming via WebSocket.
+2. **Python Voice Service** (port 11501, optional) — Handles STT, TTS, and real-time voice streaming via WebSocket.
 
 The desktop app (Tauri 2) spawns both processes and provides a native UI. In server mode, both can be deployed via Docker.

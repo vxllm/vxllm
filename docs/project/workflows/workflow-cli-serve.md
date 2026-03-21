@@ -8,7 +8,7 @@ Last Updated: 2026-03-20
 # Workflow: CLI — Start Server
 
 ## Summary
-Initializes VxLLM server from command line. Parses CLI arguments, validates environment, initializes database, starts Hono HTTP server, optionally loads model and voice sidecar, then listens for shutdown signal.
+Initializes VxLLM server from command line. Parses CLI arguments, validates environment, initializes database, starts Hono HTTP server, optionally loads model and voice service, then listens for shutdown signal.
 
 ## Trigger
 - User runs `vxllm serve` from terminal
@@ -19,7 +19,7 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
 - **Hono Server** (HTTP + WebSocket)
 - **Drizzle + SQLite** (database)
 - **node-llama-cpp** (model inference)
-- **Python Voice Sidecar** (optional)
+- **Python Voice Service** (optional)
 - **Bun** (runtime)
 
 ## Preconditions
@@ -193,7 +193,7 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
     }
 
     const { socket, response } = Bun.upgrade(c.req);
-    // Proxy to Python voice sidecar
+    // Proxy to Python voice service
     proxyToVoiceSidecar(socket);
     return response;
   });
@@ -215,23 +215,23 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
   ```
 - Model loading is async but doesn't block server startup
 
-### Step 11: Start Voice Sidecar (If Enabled)
+### Step 11: Start Voice Service (If Enabled)
 - Check settings.enable_voice:
   ```js
   const enableVoice = await getSetting("enable_voice");
   if (enableVoice === "true") {
-    console.log("→ Starting voice sidecar...");
+    console.log("→ Starting voice service...");
     try {
-      const sidecarProcess = await startVoiceSidecar({
+      const voiceProcess = await startVoiceService({
         port: cliConfig.port + 1000, // e.g., 12500
         modelsDir: modelsDir,
         python: "python3" // or python
       });
-      console.log(`✓ Voice sidecar running on port ${cliConfig.port + 1000}`);
+      console.log(`✓ Voice service running on port ${cliConfig.port + 1000}`);
     } catch (e) {
-      console.warn(`✗ Failed to start voice sidecar: ${e.message}`);
+      console.warn(`✗ Failed to start voice service: ${e.message}`);
       console.warn("  Voice features will be unavailable");
-      // Continue without voice sidecar
+      // Continue without voice service
     }
   }
   ```
@@ -285,10 +285,10 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
       await unloadModel();
     }
 
-    // 3. Stop voice sidecar
-    if (sidecarProcess) {
-      console.log("  Stopping voice sidecar...");
-      sidecarProcess.kill();
+    // 3. Stop voice service
+    if (voiceProcess) {
+      console.log("  Stopping voice service...");
+      voiceProcess.kill();
       await sleep(1000); // grace period
     }
 
@@ -302,7 +302,7 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
   ```
 - Waits for active requests to complete (configurable timeout)
 - Unloads model cleanly
-- Terminates sidecar process
+- Terminates voice service process
 - Closes database connection
 
 ### Step 15: Server Running State
@@ -438,12 +438,12 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
   - User frees up memory
   - User tries smaller model variant
 
-### Voice Sidecar Startup Fails
-- **Symptom**: Python sidecar fails to start (python not found, or port in use)
-- **Detection**: startVoiceSidecar() throws error in Step 11
+### Voice Service Startup Fails
+- **Symptom**: Python voice service fails to start (python not found, or port in use)
+- **Detection**: startVoiceService() throws error in Step 11
 - **Response**:
   ```
-  ✗ Failed to start voice sidecar: python3 not found
+  ✗ Failed to start voice service: python3 not found
   Voice features will be unavailable
 
   Install Python 3 and required packages: pip install faster-whisper kokoro-onnx
@@ -466,13 +466,13 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
   - User provides valid host: `vxllm serve --host localhost`
 
 ### Signal Handler Fails During Shutdown
-- **Symptom**: Model unload or sidecar termination fails during graceful shutdown
+- **Symptom**: Model unload or voice service termination fails during graceful shutdown
 - **Detection**: Exception in gracefulShutdown() in Step 14
 - **Response**:
   ```
   → Shutting down...
   ✗ Error unloading model: device lost
-  ✗ Error stopping sidecar: timeout
+  ✗ Error stopping voice service: timeout
   Forcing shutdown...
   ```
 - **Recovery**:
@@ -526,13 +526,13 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
 - **Server instance** (Hono)
 - **Database connection** (Drizzle + SQLite)
 - **Model cache** (if --model specified)
-- **Voice sidecar process** (if enabled)
+- **Voice service process** (if enabled)
 
 ## Related Documentation
 - `/docs/cli/commands.md` — All vxllm CLI commands
 - `/docs/deployment/standalone.md` — Running as standalone server
 - `/docs/deployment/configuration.md` — All configuration options
-- `/docs/voice/setup.md` — Voice sidecar setup and requirements
+- `/docs/voice/setup.md` — Voice service setup and requirements
 - `workflow-inference-chat.md` — What happens after server starts
 
 ## Changelog
@@ -540,6 +540,6 @@ Initializes VxLLM server from command line. Parses CLI arguments, validates envi
   - CLI argument parsing and validation
   - Database initialization with migrations
   - Model pre-loading on startup
-  - Voice sidecar startup
+  - Voice service startup
   - Graceful shutdown handling
   - Comprehensive error scenarios and recovery

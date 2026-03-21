@@ -25,7 +25,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 - [Bun](https://bun.sh) >= 1.3
 - [Node.js](https://nodejs.org) >= 18 (for some tooling)
-- [Python](https://python.org) >= 3.11 (for voice sidecar)
+- [Python](https://python.org) >= 3.11 (for voice service)
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 - [Rust](https://rustup.rs/) (only for Tauri desktop builds)
 - [CMake](https://cmake.org/) >= 3.15 (for node-llama-cpp native build)
@@ -60,7 +60,8 @@ vxllm/
 │   ├── server/       # Hono + Bun (API server)
 │   ├── cli/          # citty (CLI tool)
 │   ├── docs/         # Fumadocs (documentation)
-│   └── www/          # Next.js (marketing site)
+│   ├── www/          # Next.js (marketing site)
+│   └── voice/        # Python FastAPI (STT/TTS/VAD)
 ├── packages/
 │   ├── inference/    # node-llama-cpp wrapper
 │   ├── llama-provider/ # AI SDK adapter
@@ -69,8 +70,6 @@ vxllm/
 │   ├── ui/           # shadcn/ui components
 │   ├── env/          # Environment validation
 │   └── config/       # Shared configs
-├── sidecar/
-│   └── voice/        # Python FastAPI (STT/TTS/VAD)
 └── docker/           # Docker deployment
 ```
 
@@ -84,10 +83,10 @@ bun run dev:docs         # Documentation (port 4000)
 bun run dev:www          # Marketing site (port 3000)
 ```
 
-### Voice Sidecar
+### Voice Service
 
 ```bash
-cd sidecar/voice
+cd apps/voice
 uv sync
 uv run uvicorn app.main:app --port 11501
 ```
@@ -201,7 +200,7 @@ Components are installed into `packages/ui/src/components/`.
 - **Hooks** — Custom hooks in `hooks/` directory
 - **Components** — One component per file, named after the file
 
-### Python (Voice Sidecar)
+### Python (Voice Service)
 
 - **Python 3.11+** — Use modern syntax (type hints, `match`, `|` unions)
 - **uv** — Use uv for package management
@@ -260,7 +259,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 | `api` | `packages/api` (oRPC) |
 | `db` | `packages/db` (database) |
 | `ui` | `packages/ui` (components) |
-| `voice` | `sidecar/voice` (Python) |
+| `voice` | `apps/voice` (Python) |
 | `tauri` | Tauri desktop |
 | `docker` | Docker deployment |
 

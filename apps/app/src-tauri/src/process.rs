@@ -3,14 +3,14 @@ use std::sync::Mutex;
 
 pub struct ProcessManager {
     server: Mutex<Option<Child>>,
-    sidecar: Mutex<Option<Child>>,
+    voice: Mutex<Option<Child>>,
 }
 
 impl ProcessManager {
     pub fn new() -> Self {
         ProcessManager {
             server: Mutex::new(None),
-            sidecar: Mutex::new(None),
+            voice: Mutex::new(None),
         }
     }
 
@@ -25,7 +25,7 @@ impl ProcessManager {
         Ok(())
     }
 
-    pub fn spawn_sidecar(&self) -> Result<(), String> {
+    pub fn spawn_voice(&self) -> Result<(), String> {
         let child = Command::new("uv")
             .args([
                 "run",
@@ -36,10 +36,10 @@ impl ProcessManager {
                 "--port",
                 "11501",
             ])
-            .current_dir("sidecar/voice")
+            .current_dir("apps/voice")
             .spawn()
-            .map_err(|e| format!("Failed to start voice sidecar: {}", e))?;
-        *self.sidecar.lock().unwrap() = Some(child);
+            .map_err(|e| format!("Failed to start voice service: {}", e))?;
+        *self.voice.lock().unwrap() = Some(child);
         Ok(())
     }
 
@@ -47,7 +47,7 @@ impl ProcessManager {
         if let Some(mut child) = self.server.lock().unwrap().take() {
             let _ = child.kill();
         }
-        if let Some(mut child) = self.sidecar.lock().unwrap().take() {
+        if let Some(mut child) = self.voice.lock().unwrap().take() {
             let _ = child.kill();
         }
     }
@@ -61,8 +61,8 @@ impl ProcessManager {
             .unwrap_or(false)
     }
 
-    pub fn is_sidecar_running(&self) -> bool {
-        self.sidecar
+    pub fn is_voice_running(&self) -> bool {
+        self.voice
             .lock()
             .unwrap()
             .as_mut()
@@ -75,9 +75,9 @@ impl ProcessManager {
         self.spawn_server()
     }
 
-    pub fn restart_sidecar(&self) -> Result<(), String> {
-        self.kill_sidecar();
-        self.spawn_sidecar()
+    pub fn restart_voice(&self) -> Result<(), String> {
+        self.kill_voice();
+        self.spawn_voice()
     }
 
     fn kill_server(&self) {
@@ -86,8 +86,8 @@ impl ProcessManager {
         }
     }
 
-    fn kill_sidecar(&self) {
-        if let Some(mut child) = self.sidecar.lock().unwrap().take() {
+    fn kill_voice(&self) {
+        if let Some(mut child) = self.voice.lock().unwrap().take() {
             let _ = child.kill();
         }
     }

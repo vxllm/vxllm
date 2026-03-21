@@ -46,7 +46,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
                 let _ = pm.restart_server();
             } else if id == "restart_voice" {
                 let pm = app.state::<ProcessManager>();
-                let _ = pm.restart_sidecar();
+                let _ = pm.restart_voice();
             } else if id == "quit" {
                 let pm = app.state::<ProcessManager>();
                 pm.kill_all();

@@ -42,11 +42,11 @@ Without API compatibility, users face vendor lock-in and must maintain separate 
 - **Model Management**:
   - `GET /v1/models` - List available models in OpenAI format
 - **Audio**:
-  - `POST /v1/audio/transcriptions` - Speech-to-text (proxies to voice sidecar)
-  - `POST /v1/audio/speech` - Text-to-speech (proxies to voice sidecar, supports streaming)
+  - `POST /v1/audio/transcriptions` - Speech-to-text (proxies to voice service)
+  - `POST /v1/audio/speech` - Text-to-speech (proxies to voice service, supports streaming)
 - **Real-time Audio**:
-  - `WS /ws/audio/stream` - WebSocket for real-time STT (proxies to voice sidecar)
-  - `WS /ws/chat` - Full voice chat loop (integrates LLM + voice sidecar)
+  - `WS /ws/audio/stream` - WebSocket for real-time STT (proxies to voice service)
+  - `WS /ws/chat` - Full voice chat loop (integrates LLM + voice service)
 - **System**:
   - `GET /health` - Server health check
   - `GET /metrics` - Prometheus-format metrics
@@ -325,7 +325,7 @@ Content-Type: application/json
 - Health endpoint returns correct status and model info
 - Metrics endpoint returns valid Prometheus format
 - Streaming persists through network latency (tokens arrive when ready)
-- Audio transcription/speech endpoints proxy correctly to voice sidecar
+- Audio transcription/speech endpoints proxy correctly to voice service
 - WebSocket endpoints /ws/audio/stream and /ws/chat work for real-time audio
 - Request IDs are unique and included in response headers
 - CORS headers are set correctly (if configured)
@@ -336,7 +336,7 @@ Content-Type: application/json
 - **Hono**: Raw HTTP route handlers (not oRPC) for exact OpenAI format control
 - **node-llama-cpp**: Core inference engine for chat completions
 - **AI SDK**: ai core + ai-sdk-llama-cpp provider for token counting and structured output
-- **Voice Sidecar (FastAPI)**: Proxied for /v1/audio/transcriptions, /v1/audio/speech, /ws/audio/stream
+- **Voice Service (FastAPI)**: Proxied for /v1/audio/transcriptions, /v1/audio/speech, /ws/audio/stream
 - **Bun**: HTTP server runtime
 - **Drizzle + SQLite**: usage_metrics table for tracking API calls
 - **packages/inference**: Model loading, inference, token counting
@@ -375,7 +375,7 @@ Content-Type: application/json
 - Specified exact OpenAI response format (id, object, created, model, choices, usage)
 - Defined streaming SSE format with [DONE] sentinel
 - Specified models list endpoint in OpenAI format
-- Defined audio transcription and speech endpoints (proxied to voice sidecar)
+- Defined audio transcription and speech endpoints (proxied to voice service)
 - Specified WebSocket endpoints for real-time audio (/ws/audio/stream, /ws/chat)
 - Outlined error format and code mapping
 - Specified API key authentication in server mode

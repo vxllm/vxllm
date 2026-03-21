@@ -20,11 +20,11 @@ VxLLM uses a hybrid API approach: **oRPC** for type-safe app-specific routes and
 | `/v1/completions` | POST | Raw text completion | node-llama-cpp | [→](./api-inference.md) |
 | `/v1/embeddings` | POST | Generate embeddings | node-llama-cpp | [→](./api-inference.md) |
 | `/v1/models` | GET | List available models | DB query | [→](./api-inference.md) |
-| `/v1/audio/transcriptions` | POST | Speech-to-text | Voice sidecar | [→](./api-voice.md) |
-| `/v1/audio/speech` | POST | Text-to-speech (streaming) | Voice sidecar | [→](./api-voice.md) |
-| `/v1/audio/voices` | GET | List TTS voices | Voice sidecar | [→](./api-voice.md) |
-| `/ws/audio/stream` | WS | Real-time STT | Voice sidecar | [→](./api-voice.md) |
-| `/ws/chat` | WS | Full voice chat loop | Voice sidecar + node-llama-cpp | [→](./api-voice.md) |
+| `/v1/audio/transcriptions` | POST | Speech-to-text | Voice service | [→](./api-voice.md) |
+| `/v1/audio/speech` | POST | Text-to-speech (streaming) | Voice service | [→](./api-voice.md) |
+| `/v1/audio/voices` | GET | List TTS voices | Voice service | [→](./api-voice.md) |
+| `/ws/audio/stream` | WS | Real-time STT | Voice service | [→](./api-voice.md) |
+| `/ws/chat` | WS | Full voice chat loop | Voice service + node-llama-cpp | [→](./api-voice.md) |
 | `/health` | GET | Server health check | — | [→](./api-dashboard.md) |
 | `/metrics` | GET | Prometheus metrics | — | [→](./api-dashboard.md) |
 

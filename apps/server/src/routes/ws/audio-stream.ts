@@ -8,7 +8,7 @@ const { upgradeWebSocket, websocket } = createBunWebSocket();
  * WS /ws/audio/stream
  *
  * Bidirectional WebSocket proxy between the browser and the Python voice
- * sidecar's /stream endpoint. The client sends raw 16-bit LE PCM audio frames
+ * voice service's /stream endpoint. The client sends raw 16-bit LE PCM audio frames
  * (mono, 16 kHz, ~30 ms each) and receives JSON messages with VAD events and
  * transcription results.
  *
@@ -21,20 +21,20 @@ const wsRoutes = new Hono();
 wsRoutes.get(
   "/audio/stream",
   upgradeWebSocket(() => {
-    let sidecarWs: WebSocket | null = null;
+    let voiceWs: WebSocket | null = null;
 
     return {
       onOpen(_evt, ws) {
-        const sidecarUrl = env.VOICE_SIDECAR_URL.replace(/^http/, "ws");
-        sidecarWs = new WebSocket(`${sidecarUrl}/stream`);
+        const voiceUrl = env.VOICE_URL.replace(/^http/, "ws");
+        voiceWs = new WebSocket(`${voiceUrl}/stream`);
 
-        sidecarWs.binaryType = "arraybuffer";
+        voiceWs.binaryType = "arraybuffer";
 
-        sidecarWs.onopen = () => {
-          console.log("[ws/audio-stream] Connected to voice sidecar");
+        voiceWs.onopen = () => {
+          console.log("[ws/audio-stream] Connected to voice service");
         };
 
-        sidecarWs.onmessage = (event: MessageEvent) => {
+        voiceWs.onmessage = (event: MessageEvent) => {
           try {
             ws.send(
               typeof event.data === "string"
@@ -48,13 +48,13 @@ wsRoutes.get(
           }
         };
 
-        sidecarWs.onerror = (event) => {
-          console.error("[ws/audio-stream] Sidecar WebSocket error:", event);
+        voiceWs.onerror = (event) => {
+          console.error("[ws/audio-stream] Voice service WebSocket error:", event);
           try {
             ws.send(
               JSON.stringify({
                 type: "error",
-                detail: "Voice sidecar connection error",
+                detail: "Voice service connection error",
               }),
             );
           } catch {
@@ -62,8 +62,8 @@ wsRoutes.get(
           }
         };
 
-        sidecarWs.onclose = () => {
-          console.log("[ws/audio-stream] Sidecar WebSocket closed");
+        voiceWs.onclose = () => {
+          console.log("[ws/audio-stream] Voice service WebSocket closed");
           try {
             ws.close();
           } catch {
@@ -73,34 +73,34 @@ wsRoutes.get(
       },
 
       onMessage(evt, _ws) {
-        if (sidecarWs && sidecarWs.readyState === WebSocket.OPEN) {
+        if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
           const data = evt.data;
           if (typeof data === "string") {
-            sidecarWs.send(data);
+            voiceWs.send(data);
           } else if (data instanceof ArrayBuffer) {
-            sidecarWs.send(data);
+            voiceWs.send(data);
           } else if (data instanceof Blob) {
             // Convert Blob to ArrayBuffer before forwarding
             data.arrayBuffer().then((buf) => {
-              sidecarWs?.send(buf);
+              voiceWs?.send(buf);
             });
           }
         }
       },
 
       onClose() {
-        if (sidecarWs) {
-          sidecarWs.close();
-          sidecarWs = null;
+        if (voiceWs) {
+          voiceWs.close();
+          voiceWs = null;
         }
         console.log("[ws/audio-stream] Client disconnected");
       },
 
       onError(evt) {
         console.error("[ws/audio-stream] WebSocket error:", evt);
-        if (sidecarWs) {
-          sidecarWs.close();
-          sidecarWs = null;
+        if (voiceWs) {
+          voiceWs.close();
+          voiceWs = null;
         }
       },
     };

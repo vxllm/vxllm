@@ -5,9 +5,9 @@ description: Speech-to-text transcription and text-to-speech synthesis endpoints
 
 # Audio
 
-VxLLM provides audio endpoints for speech-to-text (STT) and text-to-speech (TTS) via the Python voice sidecar. These endpoints are proxied from the main server to the voice sidecar running on port 11501.
+VxLLM provides audio endpoints for speech-to-text (STT) and text-to-speech (TTS) via the Python voice service. These endpoints are proxied from the main server to the voice service running on port 11501.
 
-The voice sidecar must be running for these endpoints to work. See [Voice Setup](/docs/voice/setup) for installation instructions.
+The voice service must be running for these endpoints to work. See [Voice Setup](/docs/voice/setup) for installation instructions.
 
 ## Transcriptions (Speech-to-Text)
 
@@ -120,7 +120,7 @@ For real-time voice interaction, VxLLM provides a WebSocket endpoint:
 WS ws://localhost:11500/ws/stream
 ```
 
-This WebSocket proxies to the voice sidecar and supports:
+This WebSocket proxies to the voice service and supports:
 - Real-time voice activity detection (VAD)
 - Streaming speech-to-text transcription
 - Continuous conversation flow

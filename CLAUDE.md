@@ -25,9 +25,9 @@ VxLLM is an open-source, self-hostable AI model server that runs LLM, STT (Speec
 | Desktop | Tauri 2 (Rust backend) |
 | CLI | citty (UnJS) |
 | Model Downloads | @huggingface/hub + Bun native fetch |
-| Voice STT | faster-whisper (Python sidecar) |
-| Voice TTS | Kokoro-82M (Python sidecar) |
-| Voice VAD | silero-vad (Python sidecar) |
+| Voice STT | faster-whisper (Python voice service) |
+| Voice TTS | Kokoro-82M (Python voice service) |
+| Voice VAD | silero-vad (Python voice service) |
 | Voice Framework | FastAPI + Uvicorn |
 | Auth | API key (server mode only, localhost = no auth) |
 | Config | @t3-oss/env-core + Zod |
@@ -41,11 +41,11 @@ VxLLM is an open-source, self-hostable AI model server that runs LLM, STT (Speec
 Tauri 2 (Rust) — spawns processes:
 ├── Bun/Hono server (port 11500) — node-llama-cpp in-process
 │   ├── /v1/* (OpenAI-compatible) → node-llama-cpp directly
-│   ├── /v1/audio/* → proxy to voice sidecar
-│   ├── /ws/* → proxy to voice sidecar
+│   ├── /v1/audio/* → proxy to voice service
+│   ├── /ws/* → proxy to voice service
 │   └── /rpc/* (oRPC) → DB queries, model mgmt, settings
 │
-└── Python voice sidecar (port 11501) — only if voice models downloaded
+└── Python voice service (port 11501) — only if voice models downloaded
     ├── POST /transcribe → faster-whisper
     ├── POST /speak → Kokoro TTS
     └── WS /stream → real-time VAD + STT
@@ -73,7 +73,7 @@ React UI (apps/app) talks to Hono (localhost:11500)
 - CLI: `vxllm serve`, `vxllm pull`, `vxllm run`, `vxllm list`, `vxllm ps`, `vxllm rm`
 - Dashboard with hardware monitoring and inference metrics
 - API key auth for server/cloud deployment mode
-- Docker support (server + voice sidecar)
+- Docker support (server + voice service)
 
 ## Monorepo Structure
 
@@ -85,7 +85,8 @@ vxllm/
 │   ├── server/           # Hono+Bun+node-llama-cpp (main API)
 │   ├── cli/              # citty CLI
 │   ├── docs/             # Documentation site (Fumadocs)
-│   └── www/              # Marketing website (Next.js)
+│   ├── www/              # Marketing website (Next.js)
+│   └── voice/            # Python: FastAPI + faster-whisper + Kokoro + silero-vad
 ├── packages/
 │   ├── inference/        # node-llama-cpp wrapper, hardware detect, model downloads
 │   ├── llama-provider/   # Fresh AI SDK adapter on node-llama-cpp (AI SDK LanguageModelV3 provider)
@@ -94,8 +95,6 @@ vxllm/
 │   ├── ui/               # shadcn/ui shared components
 │   ├── env/              # t3-env validated config
 │   └── config/           # Shared tsconfig
-├── sidecar/
-│   └── voice/            # Python: FastAPI + faster-whisper + Kokoro + silero-vad
 ├── docker/               # Dockerfiles + docker-compose
 ├── models.json           # Curated model index (community-maintained)
 └── turbo.json
@@ -146,7 +145,7 @@ bun run db:studio        # Open Drizzle Studio
 | PORT | No | `11500` | Server port |
 | HOST | No | `127.0.0.1` | Bind host (use 0.0.0.0 for server mode) |
 | MODELS_DIR | No | `~/.vxllm/models` | Model storage directory |
-| VOICE_SIDECAR_URL | No | `http://localhost:11501` | Python voice sidecar URL |
+| VOICE_URL | No | `http://localhost:11501` | Python voice service URL |
 | API_KEY | No | — | API key for server mode auth |
 | LOG_LEVEL | No | `info` | Logging verbosity |
 | DEFAULT_MODEL | No | — | Model to auto-load on startup |

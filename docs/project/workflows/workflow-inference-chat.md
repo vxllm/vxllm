@@ -19,7 +19,7 @@ Handles user chat messages from UI or API, routing through authentication, model
 - **Hono Server** (request routing, auth)
 - **node-llama-cpp** (LLM inference)
 - **Database** (Drizzle + SQLite)
-- **Python Voice Sidecar** (optional, if voice response enabled)
+- **Python Voice Service** (optional, if voice response enabled)
 
 ## Preconditions
 - Server is running (Hono listening on configured port)

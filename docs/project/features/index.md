@@ -17,7 +17,7 @@ All feature specifications for VxLLM, organized by priority and domain.
 | LLM Inference | In-process inference via node-llama-cpp with Metal/CUDA/CPU auto-detection | Draft | P0 | [→](./feature-inference.md) |
 | Model Management | Download, store, track, and manage AI models from HuggingFace Hub | Draft | P0 | [→](./feature-model-management.md) |
 | Chat | Conversational AI with streaming responses and persistent history | Draft | P0 | [→](./feature-chat.md) |
-| Voice Pipeline | Real-time STT + TTS + VAD via Python sidecar | Draft | P0 | [→](./feature-voice.md) |
+| Voice Pipeline | Real-time STT + TTS + VAD via Python voice service | Draft | P0 | [→](./feature-voice.md) |
 | OpenAI API Compatibility | Full OpenAI-compatible REST API endpoints | Draft | P0 | [→](./feature-api-compatibility.md) |
 | Settings & Configuration | Centralized config management, API keys, hardware overrides | Draft | P1 | [→](./feature-settings.md) |
 | Dashboard | Real-time hardware monitoring and inference metrics | Draft | P1 | [→](./feature-dashboard.md) |
