@@ -113,8 +113,8 @@ export default defineCommand({
 
       // Graceful shutdown — kill voice service too
       const shutdown = () => {
-        if (voiceProc && !voiceProc.killed) {
-          voiceProc.kill("SIGTERM");
+        if (voiceProc) {
+          voiceProc.kill();
         }
         process.exit(0);
       };
@@ -122,7 +122,7 @@ export default defineCommand({
       process.on("SIGTERM", shutdown);
       process.on("SIGINT", shutdown);
     } catch (err: unknown) {
-      if (voiceProc && !voiceProc.killed) voiceProc.kill();
+      if (voiceProc) voiceProc.kill();
       const message = err instanceof Error ? err.message : String(err);
       consola.error(`Failed to start: ${message}`);
       process.exit(1);
