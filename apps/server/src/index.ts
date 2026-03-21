@@ -5,13 +5,18 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { createContext } from "@vxllm/api/context";
 import { appRouter } from "@vxllm/api/routers/index";
+import { db } from "@vxllm/db";
+import { models } from "@vxllm/db/schema/models";
+import { settings } from "@vxllm/db/schema/settings";
 import { env } from "@vxllm/env/server";
 import {
   ModelManager,
   Registry,
   DownloadManager,
   detectHardware,
+  type ModelInfo,
 } from "@vxllm/inference";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -163,21 +168,108 @@ async function startup() {
     await modelManager.initialize();
     console.log("[startup] Llama runtime initialized");
 
-    // Auto-load default model if configured
-    if (env.DEFAULT_MODEL) {
-      console.log(`[startup] Auto-loading default model: ${env.DEFAULT_MODEL}`);
-      const modelInfo = await registry.resolve(env.DEFAULT_MODEL);
-      if (modelInfo) {
-        // Check if it has a local path (i.e., it's been downloaded)
-        // In practice, the model needs to be downloaded first
-        if (modelInfo.localPath) {
-          const loaded = await modelManager.load(modelInfo);
-          console.log(`[startup] Model loaded: ${loaded.modelInfo.name} (session: ${loaded.sessionId})`);
-        } else {
-          console.log(`[startup] Default model "${env.DEFAULT_MODEL}" found in registry but not downloaded yet`);
+    // ── Auto-load persisted models from settings ─────────────────────────
+    const LOAD_KEYS = [
+      { key: "loaded_llm_id", type: "llm" as const },
+      { key: "loaded_embedding_id", type: "embedding" as const },
+      { key: "loaded_stt_id", type: "stt" as const },
+      { key: "loaded_tts_id", type: "tts" as const },
+    ];
+
+    let hasPersistedModels = false;
+
+    for (const { key, type } of LOAD_KEYS) {
+      const [setting] = await db
+        .select()
+        .from(settings)
+        .where(eq(settings.key, key))
+        .limit(1);
+
+      if (!setting) continue;
+      hasPersistedModels = true;
+
+      const modelId = setting.value;
+      const [model] = await db
+        .select()
+        .from(models)
+        .where(eq(models.id, modelId))
+        .limit(1);
+
+      if (!model || model.status !== "downloaded" || !model.localPath) {
+        console.warn(`[startup] Persisted ${type} model "${modelId}" no longer valid — clearing setting`);
+        await db.delete(settings).where(eq(settings.key, key));
+        continue;
+      }
+
+      if (type === "stt" || type === "tts") {
+        // Voice models: proxy to voice service (only if running)
+        try {
+          const healthRes = await fetch(`${env.VOICE_URL}/health`, {
+            signal: AbortSignal.timeout(2000),
+          });
+          if (healthRes.ok) {
+            const loadRes = await fetch(`${env.VOICE_URL}/models/load`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ type, model_path: model.localPath }),
+              signal: AbortSignal.timeout(10000),
+            });
+            if (loadRes.ok) {
+              console.log(`[startup] Auto-loaded ${type}: ${model.displayName}`);
+            } else {
+              console.warn(`[startup] Failed to auto-load ${type} model "${model.displayName}" via voice service`);
+            }
+          } else {
+            console.log(`[startup] Voice service not running — skipping ${type} auto-load`);
+          }
+        } catch {
+          console.log(`[startup] Voice service unavailable — skipping ${type} auto-load`);
         }
       } else {
-        console.warn(`[startup] Default model "${env.DEFAULT_MODEL}" not found in registry`);
+        // LLM/Embedding: load via ModelManager
+        try {
+          const modelInfo: ModelInfo = {
+            name: model.name,
+            displayName: model.displayName,
+            description: model.description ?? null,
+            type: model.type as ModelInfo["type"],
+            format: (model.format ?? "gguf") as ModelInfo["format"],
+            variant: model.variant ?? null,
+            repo: model.repo ?? null,
+            fileName: model.fileName ?? null,
+            downloadMethod: model.format === "gguf" ? "file" : "repo",
+            localPath: model.localPath,
+            sizeBytes: model.sizeBytes ?? 0,
+            minRamGb: model.minRamGb ?? null,
+            recommendedVramGb: model.recommendedVramGb ?? null,
+            status: model.status as ModelInfo["status"],
+          };
+          const loaded = await modelManager.load(modelInfo);
+          console.log(`[startup] Auto-loaded ${type}: ${loaded.modelInfo.displayName} (session: ${loaded.sessionId})`);
+        } catch (err) {
+          console.warn(`[startup] Failed to auto-load ${type} model "${model.displayName}":`, err);
+          await db.delete(settings).where(eq(settings.key, key));
+        }
+      }
+    }
+
+    // Fallback: if no persisted models exist and DEFAULT_MODEL is set, use it for first boot
+    if (!hasPersistedModels && env.DEFAULT_MODEL) {
+      console.log(`[startup] No persisted models — falling back to DEFAULT_MODEL: ${env.DEFAULT_MODEL}`);
+      const resolvedModel = await registry.resolve(env.DEFAULT_MODEL);
+      if (resolvedModel?.localPath) {
+        try {
+          const loaded = await modelManager.load(resolvedModel);
+          console.log(`[startup] Model loaded: ${loaded.modelInfo.name} (session: ${loaded.sessionId})`);
+          // Persist so next boot uses settings
+          const now = Date.now();
+          await db
+            .insert(settings)
+            .values({ key: "loaded_llm_id", value: loaded.modelInfo.name, updatedAt: now })
+            .onConflictDoUpdate({ target: settings.key, set: { value: loaded.modelInfo.name, updatedAt: now } });
+        } catch (err) {
+          console.warn(`[startup] Failed to load DEFAULT_MODEL:`, err);
+        }
       }
     }
 
