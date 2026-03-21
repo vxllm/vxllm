@@ -2,7 +2,9 @@ import { useChat } from "@ai-sdk/react";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
-import { env } from "@vxllm/env/web";
+
+const SERVER_URL =
+  (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:11500";
 
 const chatTransportCache = new Map<string, DefaultChatTransport<UIMessage>>();
 
@@ -11,7 +13,7 @@ function getChatTransport(conversationId: string): DefaultChatTransport<UIMessag
   if (existing) return existing;
 
   const transport = new DefaultChatTransport({
-    api: `${env.VITE_SERVER_URL}/v1/chat/completions`,
+    api: `${SERVER_URL}/v1/chat/completions`,
     headers: {
       "X-Conversation-Id": conversationId,
     },
