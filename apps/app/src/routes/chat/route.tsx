@@ -4,11 +4,6 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@vxllm/ui/components/resizable";
-import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -118,26 +113,16 @@ function ChatLayout() {
 
   return (
     <ChatLayoutContext.Provider value={layoutContext}>
-      {sidebarCollapsed ? (
-        <div className="flex h-full flex-col">
+      <div className="flex h-full">
+        {!sidebarCollapsed && (
+          <div className="w-[280px] shrink-0 border-r">
+            <ChatSidebar />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
           <Outlet />
         </div>
-      ) : (
-        <ResizablePanelGroup orientation="horizontal" className="h-full">
-          <ResizablePanel
-            defaultSize={25}
-            minSize={18}
-            maxSize={40}
-            style={{ minWidth: "240px" }}
-          >
-            <ChatSidebar />
-          </ResizablePanel>
-          <ResizableHandle className="w-0 border-0 bg-transparent after:bg-transparent hover:after:bg-accent/20" />
-          <ResizablePanel defaultSize={75} minSize={50}>
-            <Outlet />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      )}
+      </div>
       <CommandPalette
         open={commandOpen}
         onOpenChange={setCommandOpen}
