@@ -31,6 +31,7 @@ import { useState } from "react";
 
 import { DownloadProgress } from "@/components/models/download-progress";
 import { DownloadedModelRow } from "@/components/models/downloaded-model-row";
+import { HfDownloadDialog } from "@/components/models/hf-download-dialog";
 import { ModelCard } from "@/components/models/model-card";
 import { orpc } from "@/utils/orpc";
 
@@ -78,6 +79,7 @@ function ModelsPage() {
 
   // HuggingFace search state
   const [hfSearchValue, setHfSearchValue] = useState("");
+  const [hfDialogRepo, setHfDialogRepo] = useState<string | null>(null);
 
   const [hfSubmittedQuery, setHfSubmittedQuery] = useState("");
   const debouncedHfType = "llm";
@@ -336,15 +338,14 @@ function ModelsPage() {
                       <ExternalLink className="size-3.5" />
                       View
                     </a>
-                    <a
-                      href={`https://huggingface.co/${model.name}/tree/main`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium transition-all hover:bg-muted hover:text-foreground"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setHfDialogRepo(model.id)}
                     >
-                      <Download className="size-3.5" />
+                      <Download className="mr-1 size-3.5" />
                       Download
-                    </a>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -352,6 +353,16 @@ function ModelsPage() {
           </div>
         )}
       </div>
+
+      {hfDialogRepo && (
+        <HfDownloadDialog
+          open={!!hfDialogRepo}
+          onOpenChange={(open) => {
+            if (!open) setHfDialogRepo(null);
+          }}
+          repoId={hfDialogRepo}
+        />
+      )}
     </div>
   );
 }

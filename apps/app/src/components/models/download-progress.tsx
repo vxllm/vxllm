@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@vxllm/ui/components/button";
 import {
@@ -46,6 +47,24 @@ export function DownloadProgress() {
       refetchInterval: 2000,
     }),
   );
+
+  // Track previously seen completed download IDs to invalidate only once
+  const prevCompletedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const completed = downloads?.filter((d) => d.status === "completed") ?? [];
+    const newlyCompleted = completed.filter(
+      (d) => !prevCompletedRef.current.has(d.modelId),
+    );
+
+    if (newlyCompleted.length > 0) {
+      // Invalidate all queries so model lists, status, etc. refresh
+      queryClient.invalidateQueries();
+      for (const d of newlyCompleted) {
+        prevCompletedRef.current.add(d.modelId);
+      }
+    }
+  }, [downloads, queryClient]);
 
   const cancelMutation = useMutation(
     orpc.models.cancelDownload.mutationOptions({
