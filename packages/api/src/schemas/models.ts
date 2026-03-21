@@ -61,12 +61,13 @@ export type DownloadStatusOutput = z.infer<typeof DownloadStatusOutput>;
 // ── Load Model Input ───────────────────────────────────────────────────────
 export const LoadModelInput = z.object({
   id: z.string().min(1),
+  type: z.enum(["llm", "embedding", "stt", "tts"]),
 });
 export type LoadModelInput = z.infer<typeof LoadModelInput>;
 
 // ── Unload Model Input ─────────────────────────────────────────────────────
 export const UnloadModelInput = z.object({
-  sessionId: z.string().min(1),
+  type: z.enum(["llm", "embedding", "stt", "tts"]),
 });
 export type UnloadModelInput = z.infer<typeof UnloadModelInput>;
 
@@ -95,3 +96,18 @@ export const LoadedModelOutput = z.object({
   createdAt: z.number(),
 });
 export type LoadedModelOutput = z.infer<typeof LoadedModelOutput>;
+
+// ── Loaded Models Output (all slots) ──────────────────────────────────────
+export const VoiceModelInfo = z.object({
+  modelId: z.string(),
+  modelName: z.string(),
+}).nullable();
+
+export const LoadedModelsOutput = z.object({
+  llm: LoadedModelOutput.nullable(),
+  embedding: LoadedModelOutput.nullable(),
+  stt: VoiceModelInfo,
+  tts: VoiceModelInfo,
+  voiceServiceStatus: z.enum(["running", "stopped", "unavailable"]),
+});
+export type LoadedModelsOutput = z.infer<typeof LoadedModelsOutput>;
