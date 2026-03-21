@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnimateOnScroll } from "./animate-on-scroll";
 import { ArrowDownToLine } from "lucide-react";
 
-const RELEASES_URL = "https://github.com/datahase/vxllm/releases";
+const RELEASES_URL = "https://github.com/vxllm/vxllm/releases";
 
 function AppleIcon({ className }: { className?: string }) {
   return (

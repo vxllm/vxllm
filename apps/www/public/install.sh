@@ -4,7 +4,7 @@ set -e
 # VxLLM Installer
 # Usage: curl -fsSL https://vxllm.com/install.sh | sh
 
-REPO="datahase/vxllm"
+REPO="vxllm/vxllm"
 INSTALL_DIR="${VXLLM_INSTALL_DIR:-$HOME/.vxllm}"
 BIN_DIR="${VXLLM_BIN_DIR:-$HOME/.local/bin}"
 

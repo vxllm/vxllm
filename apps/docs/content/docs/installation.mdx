@@ -33,7 +33,7 @@ vxllm serve
 If you already have Bun installed, you can install from source:
 
 ```bash
-git clone https://github.com/datahase/vxllm.git ~/.vxllm
+git clone https://github.com/vxllm/vxllm.git ~/.vxllm
 cd ~/.vxllm
 bun install
 ```
@@ -52,7 +52,7 @@ ln -sf ~/.vxllm/apps/cli/src/index.ts ~/.local/bin/vxllm
 
 ## Desktop App
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/datahase/vxllm/releases):
+Download the latest release for your platform from [GitHub Releases](https://github.com/vxllm/vxllm/releases):
 
 | Platform | Download |
 |----------|----------|
@@ -68,14 +68,14 @@ The desktop app bundles the server and voice service. No additional setup requir
 Pull from Docker Hub and run:
 
 ```bash
-docker pull datahase/vxllm
-docker run -p 11500:11500 datahase/vxllm
+docker pull vxllm/vxllm
+docker run -p 11500:11500 vxllm/vxllm
 ```
 
 Or use Docker Compose for the full stack (server + voice service):
 
 ```bash
-git clone https://github.com/datahase/vxllm.git
+git clone https://github.com/vxllm/vxllm.git
 cd vxllm
 
 # Copy and configure environment
@@ -92,7 +92,7 @@ See [Docker Deployment](/docs/deployment/docker) for full configuration options.
 ## Building from Source
 
 ```bash
-git clone https://github.com/datahase/vxllm.git
+git clone https://github.com/vxllm/vxllm.git
 cd vxllm
 bun install
 bun run db:push

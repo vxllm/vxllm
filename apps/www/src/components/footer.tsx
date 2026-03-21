@@ -11,7 +11,7 @@ export function Footer() {
 
         <nav className="flex items-center gap-6">
           <a
-            href="https://github.com/datahase/vxllm"
+            href="https://github.com/vxllm/vxllm"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
@@ -27,12 +27,12 @@ export function Footer() {
             Docs
           </a>
           <a
-            href="https://github.com/datahase"
+            href="https://github.com/vxllm"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
           >
-            datahase
+            vxllm
           </a>
         </nav>
       </div>

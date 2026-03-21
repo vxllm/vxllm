@@ -13,15 +13,15 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2EFAA0.svg?style=flat-square" alt="MIT License" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://bun.sh"><img src="https://img.shields.io/badge/Bun-1.3-f9f1e1.svg?style=flat-square&logo=bun&logoColor=black" alt="Bun" /></a>
-  <a href="https://hub.docker.com/r/datahase/vxllm"><img src="https://img.shields.io/badge/Docker-datahase%2Fvxllm-2496ED.svg?style=flat-square&logo=docker&logoColor=white" alt="Docker" /></a>
+  <a href="https://hub.docker.com/r/vxllm/vxllm"><img src="https://img.shields.io/badge/Docker-vxllm%2Fvxllm-2496ED.svg?style=flat-square&logo=docker&logoColor=white" alt="Docker" /></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-2EFAA0.svg?style=flat-square" alt="PRs Welcome" /></a>
 </p>
 
 <p align="center">
   <a href="https://vxllm.com">Website</a> ·
   <a href="https://docs.vxllm.com">Docs</a> ·
-  <a href="https://github.com/datahase/vxllm/releases">Download</a> ·
-  <a href="https://hub.docker.com/r/datahase/vxllm">Docker Hub</a>
+  <a href="https://github.com/vxllm/vxllm/releases">Download</a> ·
+  <a href="https://hub.docker.com/r/vxllm/vxllm">Docker Hub</a>
 </p>
 
 ---
@@ -56,8 +56,8 @@ The API runs at `http://localhost:11500` and the web UI at `http://localhost:300
 ### Docker
 
 ```bash
-docker pull datahase/vxllm
-docker run -p 11500:11500 datahase/vxllm
+docker pull vxllm/vxllm
+docker run -p 11500:11500 vxllm/vxllm
 ```
 
 ### Use with Any OpenAI SDK
@@ -125,7 +125,7 @@ curl http://localhost:11500/v1/chat/completions \
 | 🔌 | **OpenAI API** | Drop-in replacement. Chat completions, embeddings, audio. Any OpenAI SDK works. |
 | 🖥️ | **Desktop App** | Tauri 2 native app (~5MB). System tray, chat UI, model library, dashboard. |
 | ⌨️ | **CLI** | `serve`, `pull`, `run`, `list`, `ps`, `rm`, `info`. Interactive streaming chat. |
-| 🐳 | **Docker** | `docker pull datahase/vxllm`. Server + voice service in one compose file. |
+| 🐳 | **Docker** | `docker pull vxllm/vxllm`. Server + voice service in one compose file. |
 | 📊 | **Dashboard** | Real-time GPU/CPU/RAM gauges, metrics charts, Prometheus endpoint. |
 | 🔐 | **Server Mode** | API key auth, rate limiting, CORS. Deploy anywhere. |
 
@@ -190,7 +190,7 @@ vxllm/
 ### Setup
 
 ```bash
-git clone https://github.com/datahase/vxllm.git
+git clone https://github.com/vxllm/vxllm.git
 cd vxllm
 bun install
 bun run db:push
@@ -234,8 +234,8 @@ bun run desktop:build    # Build .dmg / .exe / .AppImage
 
 ```bash
 # From Docker Hub
-docker pull datahase/vxllm
-docker run -p 11500:11500 datahase/vxllm
+docker pull vxllm/vxllm
+docker run -p 11500:11500 vxllm/vxllm
 
 # Or build from source
 docker compose -f docker/docker-compose.yml up -d
@@ -280,12 +280,12 @@ The easiest way to contribute is adding models to `models.json` — see the [con
 
 ## Community
 
-- [GitHub Issues](https://github.com/datahase/vxllm/issues) — Bug reports
-- [GitHub Discussions](https://github.com/datahase/vxllm/discussions) — Questions & ideas
+- [GitHub Issues](https://github.com/vxllm/vxllm/issues) — Bug reports
+- [GitHub Discussions](https://github.com/vxllm/vxllm/discussions) — Questions & ideas
 - [Documentation](https://docs.vxllm.com) — Full docs
 - [Contributing Guide](CONTRIBUTING.md) — How to contribute
 - [Security Policy](SECURITY.md) — Reporting vulnerabilities
 
 ## License
 
-[MIT](LICENSE) — Built by [datahase](https://github.com/datahase).
+[MIT](LICENSE) — Built by [vxllm](https://github.com/vxllm).

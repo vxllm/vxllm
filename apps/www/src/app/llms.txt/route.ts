@@ -38,7 +38,7 @@ VxLLM is a unified model server that runs LLM, STT (Speech-to-Text), and TTS (Te
 
 - Website: https://vxllm.com
 - Documentation: https://docs.vxllm.com
-- GitHub: https://github.com/datahase/vxllm
+- GitHub: https://github.com/vxllm/vxllm
 - License: MIT
 
 ## API Endpoints

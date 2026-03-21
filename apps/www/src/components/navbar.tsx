@@ -57,7 +57,7 @@ export function Navbar() {
         {/* Right CTAs */}
         <div className="flex items-center gap-3">
           <a
-            href="https://github.com/datahase/vxllm"
+            href="https://github.com/vxllm/vxllm"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-lg border border-neutral-700 bg-transparent p-2 text-neutral-300 transition-colors hover:border-neutral-500 hover:text-white"
