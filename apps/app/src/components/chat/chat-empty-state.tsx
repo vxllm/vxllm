@@ -5,6 +5,7 @@ import { Card, CardContent } from "@vxllm/ui/components/card";
 import { DownloadIcon, MenuIcon } from "lucide-react";
 
 import { useActiveModel } from "@/hooks/use-active-model";
+import { ModelSelector } from "@/components/chat/model-selector";
 import { useChatLayout } from "@/routes/chat/route";
 import { orpc } from "@/utils/orpc";
 
@@ -101,12 +102,14 @@ export function ChatEmptyState() {
               </p>
             </div>
 
-            {/* Nudge to load a model if models are downloaded but none active */}
+            {/* Model selector — shown when models are downloaded but none active */}
             {hasDownloadedModels && !hasActiveModel && (
-              <p className="text-sm text-amber-600 dark:text-amber-400">
-                You have models downloaded but none loaded. Select one from the
-                model selector in the chat header.
-              </p>
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  Select a model to load:
+                </p>
+                <ModelSelector />
+              </div>
             )}
           </div>
 
