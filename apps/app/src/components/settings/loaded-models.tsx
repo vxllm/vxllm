@@ -45,7 +45,6 @@ export function LoadedModels() {
           </span>
         </div>
         <ModelSlot
-          type="llm"
           label="LLM"
           loaded={llm ? {
             name: llm.modelInfo.displayName,
@@ -65,7 +64,6 @@ export function LoadedModels() {
           accentColor="green"
         />
         <ModelSlot
-          type="embedding"
           label="Embedding"
           loaded={embedding ? {
             name: embedding.modelInfo.displayName,
@@ -109,7 +107,6 @@ export function LoadedModels() {
           </Badge>
         </div>
         <ModelSlot
-          type="stt"
           label="STT"
           loaded={stt ? { name: stt.modelName } : null}
           downloadedModels={(sttModelsQuery.data ?? []).map((m) => ({
@@ -125,7 +122,6 @@ export function LoadedModels() {
           accentColor="blue"
         />
         <ModelSlot
-          type="tts"
           label="TTS"
           loaded={tts ? { name: tts.modelName } : null}
           downloadedModels={(ttsModelsQuery.data ?? []).map((m) => ({

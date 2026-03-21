@@ -8,10 +8,8 @@ import {
   SelectValue,
 } from "@vxllm/ui/components/select";
 import { CircleIcon, Loader2 } from "lucide-react";
-import { useState } from "react";
 
 interface ModelSlotProps {
-  type: "llm" | "embedding" | "stt" | "tts";
   label: string;
   loaded: {
     name: string;
@@ -33,7 +31,6 @@ function formatSize(bytes: number): string {
 }
 
 export function ModelSlot({
-  type,
   label,
   loaded,
   downloadedModels,
@@ -43,7 +40,6 @@ export function ModelSlot({
   disabled,
   accentColor,
 }: ModelSlotProps) {
-  const [selectOpen, setSelectOpen] = useState(false);
   const isGreen = accentColor === "green";
   const dotColor = loaded
     ? isGreen ? "fill-[#2EFAA0] text-[#2EFAA0]" : "fill-blue-500 text-blue-500"
@@ -91,22 +87,19 @@ export function ModelSlot({
         {loaded ? (
           <>
             <Select
-              open={selectOpen}
-              onOpenChange={setSelectOpen}
-              onValueChange={(id) => {
-                onLoad(id);
-                setSelectOpen(false);
+              value=""
+              onValueChange={(val) => {
+                if (val) {
+                  onLoad(val as string);
+                }
               }}
             >
-              <SelectTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  disabled={disabled || isLoading}
-                >
-                  Change
-                </Button>
+              <SelectTrigger
+                size="sm"
+                className="text-xs"
+                disabled={disabled || isLoading}
+              >
+                <SelectValue placeholder="Change" />
               </SelectTrigger>
               <SelectContent>
                 {downloadedModels.map((m) => (
@@ -134,22 +127,19 @@ export function ModelSlot({
           </>
         ) : (
           <Select
-            open={selectOpen}
-            onOpenChange={setSelectOpen}
-            onValueChange={(id) => {
-              onLoad(id);
-              setSelectOpen(false);
+            value=""
+            onValueChange={(val) => {
+              if (val) {
+                onLoad(val as string);
+              }
             }}
           >
-            <SelectTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-dashed text-xs"
-                disabled={disabled || isLoading}
-              >
-                + Load Model
-              </Button>
+            <SelectTrigger
+              size="sm"
+              className="border-dashed text-xs"
+              disabled={disabled || isLoading}
+            >
+              <SelectValue placeholder="+ Load Model" />
             </SelectTrigger>
             <SelectContent>
               {downloadedModels.map((m) => (

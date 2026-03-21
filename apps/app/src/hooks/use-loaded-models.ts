@@ -46,7 +46,7 @@ export function useLoadedModels() {
     embedding: loadedModelsQuery.data?.embedding ?? null,
     stt: loadedModelsQuery.data?.stt ?? null,
     tts: loadedModelsQuery.data?.tts ?? null,
-    voiceServiceStatus: loadedModelsQuery.data?.voiceServiceStatus ?? "unavailable",
+    voiceServiceStatus: (loadedModelsQuery.data?.voiceServiceStatus ?? "unavailable") as "running" | "stopped" | "unavailable",
     isLoading: loadedModelsQuery.isLoading,
     loadModel: (id: string, type: ModelType) =>
       loadModelMutation.mutate({ id, type }),
