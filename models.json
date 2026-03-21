@@ -6,6 +6,7 @@
       "displayName": "Qwen3 4B",
       "type": "llm",
       "format": "gguf",
+      "backend": "llama-cpp",
       "description": "Best 4B model — chat, code, multilingual, thinking mode",
       "tags": ["chat", "code", "multilingual", "thinking"],
       "variants": [
@@ -25,6 +26,7 @@
       "displayName": "Phi-4 Mini Instruct",
       "type": "llm",
       "format": "gguf",
+      "backend": "llama-cpp",
       "description": "Top tool calling at small size, strong reasoning",
       "tags": ["chat", "code", "tool-calling", "compact"],
       "variants": [
@@ -44,6 +46,7 @@
       "displayName": "Whisper Large v3 Turbo",
       "type": "stt",
       "format": "whisper",
+      "backend": "faster-whisper",
       "description": "Real-time multilingual transcription, best speed/accuracy balance",
       "tags": ["stt", "transcription", "multilingual"],
       "variants": [
@@ -63,6 +66,7 @@
       "displayName": "Distil Whisper Large v3",
       "type": "stt",
       "format": "whisper",
+      "backend": "faster-whisper",
       "description": "Distilled Whisper — 6x faster, 49% smaller, within 1% WER",
       "tags": ["stt", "transcription", "fast", "distilled"],
       "variants": [
@@ -82,6 +86,7 @@
       "displayName": "Qwen3 ASR 0.6B",
       "type": "stt",
       "format": "whisper",
+      "backend": "faster-whisper",
       "description": "Qwen3 automatic speech recognition, multilingual, 428K+ downloads",
       "tags": ["stt", "transcription", "multilingual", "qwen"],
       "variants": [
@@ -101,6 +106,7 @@
       "displayName": "Parakeet TDT v3",
       "type": "stt",
       "format": "whisper",
+      "backend": "faster-whisper",
       "description": "25 EU languages, RTFx ~3000+, NVIDIA NeMo",
       "tags": ["stt", "transcription", "multilingual", "fast"],
       "variants": [
@@ -120,6 +126,7 @@
       "displayName": "Qwen3-TTS 0.6B",
       "type": "tts",
       "format": "kokoro",
+      "backend": "kokoro",
       "description": "97ms latency, voice cloning, multilingual TTS",
       "tags": ["tts", "voice", "cloning", "multilingual"],
       "variants": [
@@ -139,6 +146,7 @@
       "displayName": "Kokoro v1.0 (82M)",
       "type": "tts",
       "format": "kokoro",
+      "backend": "kokoro",
       "description": "CPU-friendly TTS fallback, lightweight, high quality",
       "tags": ["tts", "voice", "cpu-friendly", "lightweight"],
       "variants": [
@@ -158,6 +166,7 @@
       "displayName": "Nomic Embed Text v1.5",
       "type": "embedding",
       "format": "gguf",
+      "backend": "llama-cpp",
       "description": "RAG, semantic search, high-quality embeddings",
       "tags": ["embedding", "rag", "search"],
       "variants": [
