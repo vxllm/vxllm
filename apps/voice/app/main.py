@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     try:
         await tts_engine.load()
-    except Exception:
+    except (Exception, SystemExit):
         logger.warning("TTS engine failed to preload — will retry on first request.")
 
     try:
