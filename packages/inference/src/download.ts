@@ -662,14 +662,13 @@ export class DownloadManager {
   }
 
   /**
-   * Get all active (queued, downloading, paused) downloads.
+   * Get all downloads including recently completed/failed ones.
+   * This allows the UI to detect completion and refresh model lists.
    *
-   * @returns Array of download progress entries
+   * @returns Array of all download progress entries
    */
   getActive(): DownloadProgress[] {
-    return Array.from(this.progressMap.values()).filter(
-      (p) => p.status !== "completed" && p.status !== "failed",
-    );
+    return Array.from(this.progressMap.values());
   }
 
   /**
