@@ -270,19 +270,31 @@ export class DownloadManager {
     abortController: AbortController,
   ): Promise<void> {
     // Get download info (URL + size) from HuggingFace
-    const info = await fileDownloadInfo({
-      repo: modelInfo.repo!,
-      path: modelInfo.fileName!,
-    });
+    let downloadUrl: string;
+    let fileSize: number;
 
-    if (!info) {
-      throw new Error(
-        `File not found on HuggingFace: ${modelInfo.repo}/${modelInfo.fileName}`,
-      );
+    try {
+      const info = await fileDownloadInfo({
+        repo: modelInfo.repo!,
+        path: modelInfo.fileName!,
+      });
+
+      if (info) {
+        downloadUrl = info.url;
+        fileSize = info.size;
+      } else {
+        // Fallback: construct direct HuggingFace CDN URL
+        downloadUrl = `https://huggingface.co/${modelInfo.repo}/resolve/main/${modelInfo.fileName}`;
+        fileSize = modelInfo.sizeBytes;
+      }
+    } catch {
+      // fileDownloadInfo may throw for non-standard repos — use direct URL
+      downloadUrl = `https://huggingface.co/${modelInfo.repo}/resolve/main/${modelInfo.fileName}`;
+      fileSize = modelInfo.sizeBytes;
     }
 
     // Update total bytes from the actual file info
-    progress.totalBytes = info.size;
+    progress.totalBytes = fileSize;
 
     // Create model-specific subfolder: ~/.vxllm/models/<type>/<model-name>/
     const modelDir = path.join(modelsDir, modelInfo.name.replace(/[/:]/g, "-"));
@@ -299,7 +311,7 @@ export class DownloadManager {
     }
 
     // If the partial file is already complete (or larger), discard it and start fresh
-    if (resumeOffset >= info.size) {
+    if (resumeOffset >= fileSize) {
       resumeOffset = 0;
     }
 
@@ -309,8 +321,8 @@ export class DownloadManager {
       headers["Range"] = `bytes=${resumeOffset}-`;
     }
 
-    // Use the direct download URL from fileDownloadInfo to get a streaming response
-    const response = await fetch(info.url, {
+    // Use the download URL for a streaming response
+    const response = await fetch(downloadUrl, {
       signal: abortController.signal,
       headers,
     });
@@ -342,8 +354,8 @@ export class DownloadManager {
     // Update progress to reflect resumed offset
     progress.downloadedBytes = downloadedBytes;
     progress.progressPct =
-      info.size > 0
-        ? Math.min(100, Math.round((downloadedBytes / info.size) * 100))
+      fileSize > 0
+        ? Math.min(100, Math.round((downloadedBytes / fileSize) * 100))
         : 0;
 
     try {
@@ -358,8 +370,8 @@ export class DownloadManager {
         // Update progress
         progress.downloadedBytes = downloadedBytes;
         progress.progressPct =
-          info.size > 0
-            ? Math.min(100, Math.round((downloadedBytes / info.size) * 100))
+          fileSize > 0
+            ? Math.min(100, Math.round((downloadedBytes / fileSize) * 100))
             : 0;
 
         // Calculate speed (update every 500ms)
@@ -371,7 +383,7 @@ export class DownloadManager {
           progress.eta =
             progress.speedBps > 0
               ? Math.round(
-                  (info.size - downloadedBytes) / progress.speedBps,
+                  (fileSize - downloadedBytes) / progress.speedBps,
                 )
               : null;
           lastSpeedUpdate = now;
