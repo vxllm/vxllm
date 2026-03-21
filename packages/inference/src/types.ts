@@ -46,7 +46,9 @@ export interface ModelInfo {
   /** Model type */
   type: "llm" | "stt" | "tts" | "embedding";
   /** Model file format */
-  format: "gguf" | "whisper" | "kokoro";
+  format: "gguf" | "whisper" | "kokoro" | "nemo";
+  /** Which inference backend loads this model */
+  backend: "llama-cpp" | "faster-whisper" | "nemo" | "kokoro" | "whisper-cpp" | null;
   /** Quantization variant (e.g. "Q4_K_M") or null */
   variant: string | null;
   /** HuggingFace repository (e.g. "TheBloke/Llama-2-7B-GGUF") */

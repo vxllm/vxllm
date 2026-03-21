@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@vxllm/ui/components/button";
 import {
   Dialog,
@@ -17,9 +18,9 @@ import {
 } from "@vxllm/ui/components/select";
 import { Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
+import { env } from "@vxllm/env/web";
 
-const SERVER_URL =
-  (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:11500";
+const SERVER_URL = env.VITE_SERVER_URL;
 
 interface HfDownloadDialogProps {
   open: boolean;
@@ -44,6 +45,7 @@ export function HfDownloadDialog({
   onOpenChange,
   repoId,
 }: HfDownloadDialogProps) {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [files, setFiles] = useState<HfFile[]>([]);
   const [detectedType, setDetectedType] = useState("llm");
@@ -92,6 +94,8 @@ export function HfDownloadDialog({
       });
       if (res.ok) {
         toast.success("Download started!");
+        // Invalidate queries so DownloadProgress card appears immediately
+        queryClient.invalidateQueries();
         onOpenChange(false);
       } else {
         const err = await res.json();

@@ -2,9 +2,9 @@ import { useChat } from "@ai-sdk/react";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
+import { useEffect } from "react";
 
-const SERVER_URL =
-  (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:11500";
+import { env } from "@vxllm/env/web";
 
 const chatTransportCache = new Map<string, DefaultChatTransport<UIMessage>>();
 
@@ -13,7 +13,7 @@ function getChatTransport(conversationId: string): DefaultChatTransport<UIMessag
   if (existing) return existing;
 
   const transport = new DefaultChatTransport({
-    api: `${SERVER_URL}/v1/chat/completions`,
+    api: `${env.VITE_SERVER_URL}/api/chat`,
     headers: {
       "X-Conversation-Id": conversationId,
     },
@@ -30,6 +30,13 @@ export function useChatWithPersistence(
     id: conversationId,
     transport: getChatTransport(conversationId),
   });
+
+  // Clean up transport cache when the component unmounts
+  useEffect(() => {
+    return () => {
+      chatTransportCache.delete(conversationId);
+    };
+  }, [conversationId]);
 
   return chat;
 }

@@ -4,7 +4,8 @@ import { z } from "zod";
 export const ModelFilterInput = z.object({
   type: z.enum(["llm", "stt", "tts", "embedding"]).optional(),
   status: z.enum(["available", "downloading", "downloaded", "error"]).optional(),
-  format: z.enum(["gguf", "whisper", "kokoro"]).optional(),
+  format: z.enum(["gguf", "whisper", "kokoro", "nemo"]).optional(),
+  backend: z.enum(["llama-cpp", "faster-whisper", "nemo", "kokoro", "whisper-cpp"]).optional(),
   search: z.string().optional(),
 });
 export type ModelFilterInput = z.infer<typeof ModelFilterInput>;
@@ -12,7 +13,7 @@ export type ModelFilterInput = z.infer<typeof ModelFilterInput>;
 // ── Model Download Input ────────────────────────────────────────────────────
 export const ModelDownloadInput = z.object({
   name: z.string().min(1),
-  format: z.enum(["gguf", "whisper", "kokoro"]).optional(),
+  format: z.enum(["gguf", "whisper", "kokoro", "nemo"]).optional(),
   priority: z.number().int().min(0).default(0),
 });
 export type ModelDownloadInput = z.infer<typeof ModelDownloadInput>;
@@ -25,7 +26,8 @@ export const ModelOutput = z.object({
   displayName: z.string(),
   description: z.string().nullable(),
   type: z.enum(["llm", "stt", "tts", "embedding"]),
-  format: z.enum(["gguf", "whisper", "kokoro"]).nullable(),
+  format: z.enum(["gguf", "whisper", "kokoro", "nemo"]).nullable(),
+  backend: z.enum(["llama-cpp", "faster-whisper", "nemo", "kokoro", "whisper-cpp"]).nullable(),
   variant: z.string().nullable(),
   repo: z.string().nullable(),
   fileName: z.string().nullable(),
@@ -62,6 +64,7 @@ export type DownloadStatusOutput = z.infer<typeof DownloadStatusOutput>;
 export const LoadModelInput = z.object({
   id: z.string().min(1),
   type: z.enum(["llm", "embedding", "stt", "tts"]),
+  backend: z.enum(["llama-cpp", "faster-whisper", "nemo", "kokoro", "whisper-cpp"]).optional(),
 });
 export type LoadModelInput = z.infer<typeof LoadModelInput>;
 
@@ -78,7 +81,8 @@ export const LoadedModelOutput = z.object({
     displayName: z.string(),
     description: z.string().nullable(),
     type: z.enum(["llm", "stt", "tts", "embedding"]),
-    format: z.enum(["gguf", "whisper", "kokoro"]),
+    format: z.enum(["gguf", "whisper", "kokoro", "nemo"]),
+    backend: z.enum(["llama-cpp", "faster-whisper", "nemo", "kokoro", "whisper-cpp"]).nullable(),
     variant: z.string().nullable(),
     repo: z.string().nullable(),
     fileName: z.string().nullable(),

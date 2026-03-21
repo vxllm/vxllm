@@ -55,10 +55,11 @@ export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const deleteConversation = useMutation(
     orpc.chat.deleteConversation.mutationOptions({
       onSuccess: () => {
+        // Invalidate ALL conversation list queries (all pages/filters)
+        // Using predicate to match any listConversations query regardless of input
         queryClient.invalidateQueries({
-          queryKey: orpc.chat.listConversations.queryOptions({
-            input: { page: 1, limit: PAGE_SIZE },
-          }).queryKey,
+          predicate: (query) =>
+            JSON.stringify(query.queryKey).includes("listConversations"),
         });
         if (activeConversationId) {
           navigate({ to: "/chat" });

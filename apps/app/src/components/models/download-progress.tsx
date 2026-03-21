@@ -41,12 +41,10 @@ function formatEta(speedBps: number | null, downloadedBytes: number, totalBytes:
 export function DownloadProgress() {
   const queryClient = useQueryClient();
 
-  const { data: downloads } = useQuery(
-    orpc.models.getDownloadStatus.queryOptions({
-      input: {},
-      refetchInterval: 2000,
-    }),
-  );
+  const { data: downloads } = useQuery({
+    ...orpc.models.getDownloadStatus.queryOptions(),
+    refetchInterval: 2000,
+  });
 
   // Track previously seen completed download IDs to invalidate only once
   const prevCompletedRef = useRef<Set<string>>(new Set());
@@ -62,6 +60,7 @@ export function DownloadProgress() {
       queryClient.invalidateQueries();
       for (const d of newlyCompleted) {
         prevCompletedRef.current.add(d.modelId);
+        toast.success(`Download complete: ${d.modelName}`);
       }
     }
   }, [downloads, queryClient]);
@@ -70,9 +69,7 @@ export function DownloadProgress() {
     orpc.models.cancelDownload.mutationOptions({
       onSuccess: () => {
         toast.success("Download cancelled");
-        queryClient.invalidateQueries({
-          queryKey: orpc.models.getDownloadStatus.queryOptions({ input: {} }).queryKey,
-        });
+        queryClient.invalidateQueries();
       },
     }),
   );
@@ -105,7 +102,7 @@ export function DownloadProgress() {
                 <Button
                   variant="ghost"
                   size="icon-xs"
-                  onClick={() => cancelMutation.mutate({ downloadId: dl.modelId })}
+                  onClick={() => cancelMutation.mutate({ modelId: dl.modelId })}
                   disabled={cancelMutation.isPending}
                 >
                   <X className="size-3" />

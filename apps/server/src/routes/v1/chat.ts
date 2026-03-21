@@ -66,20 +66,25 @@ export function createChatRoute(deps: {
     // Convert messages to AI SDK format.
     // AI SDK v6 DefaultChatTransport sends messages with `parts` array
     // instead of `content` string. Extract text from parts when content is absent.
-    const aiMessages = request.messages.map((m) => {
-      let content = m.content ?? "";
-      // If content is empty, try extracting from parts (AI SDK v6 format)
-      if (!content && Array.isArray((m as any).parts)) {
-        content = ((m as any).parts as Array<{ type: string; text?: string }>)
-          .filter((p) => p.type === "text" && p.text)
-          .map((p) => p.text!)
-          .join("");
-      }
-      return {
-        role: m.role as "system" | "user" | "assistant",
-        content,
-      };
-    });
+    // Filter out unsupported roles (e.g., "tool") that would crash node-llama-cpp.
+    const VALID_ROLES = new Set(["system", "user", "assistant"]);
+
+    const aiMessages = request.messages
+      .filter((m) => VALID_ROLES.has(m.role))
+      .map((m) => {
+        let content = m.content ?? "";
+        // If content is empty, try extracting from parts (AI SDK v6 format)
+        if (!content && Array.isArray((m as any).parts)) {
+          content = ((m as any).parts as Array<{ type: string; text?: string }>)
+            .filter((p) => p.type === "text" && p.text)
+            .map((p) => p.text!)
+            .join("");
+        }
+        return {
+          role: m.role as "system" | "user" | "assistant",
+          content,
+        };
+      });
 
     // ── Context truncation ─────────────────────────────────────────────
     // Estimate total tokens and truncate if they exceed 80% of the

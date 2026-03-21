@@ -205,6 +205,7 @@ export class DownloadManager {
       description: modelInfo.description,
       type: modelInfo.type,
       format: modelInfo.format,
+      backend: modelInfo.backend ?? null,
       variant: modelInfo.variant,
       repo: modelInfo.repo,
       fileName: modelInfo.fileName,
@@ -295,6 +296,26 @@ export class DownloadManager {
         .where(eq(downloadQueue.modelId, modelId));
     } finally {
       this.activeDownloads.delete(modelId);
+      // Auto-start the next queued download if under concurrency limit
+      this.processQueue();
+    }
+  }
+
+  /**
+   * Check for queued downloads and start them if under the concurrency limit.
+   */
+  private processQueue(): void {
+    if (this.activeDownloads.size >= env.MAX_CONCURRENT_DOWNLOADS) return;
+
+    for (const [modelId, progress] of this.progressMap) {
+      if (progress.status !== "queued") continue;
+      if (this.activeDownloads.size >= env.MAX_CONCURRENT_DOWNLOADS) break;
+
+      // Resume the queued download
+      this.resume(modelId).catch((err) => {
+        progress.status = "failed";
+        progress.error = err instanceof Error ? err.message : String(err);
+      });
     }
   }
 
@@ -915,13 +936,23 @@ export class DownloadManager {
     }
     this.activeDownloads.clear();
 
-    // Update all in-memory progress entries
-    for (const [_id, progress] of this.progressMap) {
+    // Update all in-memory progress entries and persist to DB
+    for (const [modelId, progress] of this.progressMap) {
       if (progress.status === "active" || progress.status === "queued") {
         progress.status = "failed";
         progress.error = "Cancelled (shutdown)";
         progress.speedBps = 0;
         progress.eta = null;
+
+        // Persist cancelled status to DB (fire-and-forget during shutdown)
+        db.update(downloadQueue)
+          .set({ status: "failed", error: "Cancelled (shutdown)" })
+          .where(eq(downloadQueue.modelId, modelId))
+          .catch(() => {});
+        db.update(models)
+          .set({ status: "error", updatedAt: Date.now() })
+          .where(eq(models.id, modelId))
+          .catch(() => {});
       }
     }
   }

@@ -3,10 +3,8 @@ import { RPCLink } from "@orpc/client/fetch";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import type { AppRouterClient } from "@vxllm/api/routers/index";
+import { env } from "@vxllm/env/web";
 import { toast } from "sonner";
-
-const SERVER_URL =
-  (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:11500";
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -22,7 +20,7 @@ export const queryClient = new QueryClient({
 });
 
 export const link = new RPCLink({
-  url: `${SERVER_URL}/rpc`,
+  url: `${env.VITE_SERVER_URL}/rpc`,
 });
 
 export const client: AppRouterClient = createORPCClient(link);

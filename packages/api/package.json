@@ -1,5 +1,7 @@
 {
   "name": "@vxllm/api",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -7,6 +9,12 @@
     },
     "./*": {
       "default": "./src/*.ts"
+    },
+    "./routers/*": {
+      "default": "./src/routers/*.ts"
+    },
+    "./schemas/*": {
+      "default": "./src/schemas/*.ts"
     },
     "./services/*": {
       "default": "./src/services/*.ts"

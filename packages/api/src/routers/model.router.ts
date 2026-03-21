@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, like } from "drizzle-orm";
+import { eq, and, like, inArray } from "drizzle-orm";
 import fs from "node:fs";
 
 import { publicProcedure } from "../index";
@@ -9,7 +9,7 @@ import {
   LoadModelInput,
   UnloadModelInput,
 } from "../schemas/models";
-import { models } from "@vxllm/db/schema/models";
+import { models, downloadQueue } from "@vxllm/db/schema/models";
 import { settings } from "@vxllm/db/schema/settings";
 import { env } from "@vxllm/env/server";
 import type { ModelInfo } from "@vxllm/inference";
@@ -98,6 +98,9 @@ export const modelRouter = {
       if (input.format) {
         conditions.push(eq(models.format, input.format));
       }
+      if (input.backend) {
+        conditions.push(eq(models.backend, input.backend));
+      }
       if (input.search) {
         conditions.push(like(models.name, `%${input.search}%`));
       }
@@ -146,13 +149,13 @@ export const modelRouter = {
 
   // Mutation: cancel an in-progress download
   cancelDownload: publicProcedure
-    .input(z.object({ downloadId: z.string().min(1) }))
+    .input(z.object({ modelId: z.string().min(1) }))
     .handler(async ({ input, context }) => {
       if (!context.downloadManager) {
         throw new Error("DownloadManager not available");
       }
 
-      await context.downloadManager.cancel(input.downloadId);
+      await context.downloadManager.cancel(input.modelId);
 
       return { success: true };
     }),
@@ -176,10 +179,15 @@ export const modelRouter = {
         throw new Error(`Model not found: ${input.id}`);
       }
 
-      // Optionally delete the model file from disk
+      // Optionally delete the model file/directory from disk
       if (input.deleteFiles && row.localPath) {
         try {
-          fs.unlinkSync(row.localPath);
+          const stat = fs.statSync(row.localPath);
+          if (stat.isDirectory()) {
+            fs.rmSync(row.localPath, { recursive: true, force: true });
+          } else {
+            fs.unlinkSync(row.localPath);
+          }
         } catch {
           // File may already be removed — non-critical
         }
@@ -193,19 +201,57 @@ export const modelRouter = {
     }),
 
   // Query: get download progress for one or all active downloads
+  // Merges in-memory DownloadManager progress with DB-tracked HF downloads
   getDownloadStatus: publicProcedure
-    .input(z.object({ downloadId: z.string().optional() }))
+    .input(z.object({ downloadId: z.string().optional() }).optional())
     .handler(async ({ input, context }) => {
-      if (!context.downloadManager) {
-        throw new Error("DownloadManager not available");
-      }
+      // Get in-memory progress from DownloadManager (registry-based downloads)
+      const inMemory = context.downloadManager
+        ? input?.downloadId
+          ? (() => {
+              const p = context.downloadManager!.getProgress(input.downloadId!);
+              return p ? [p] : [];
+            })()
+          : context.downloadManager.getActive()
+        : [];
 
-      if (input.downloadId) {
-        const progress = context.downloadManager.getProgress(input.downloadId);
-        return progress ? [progress] : [];
-      }
+      // Get DB-tracked downloads (HF downloads that bypass DownloadManager)
+      const inMemoryModelIds = new Set(inMemory.map((p) => p.modelId));
 
-      return context.downloadManager.getActive();
+      const dbDownloads = await context.db
+        .select({
+          modelId: downloadQueue.modelId,
+          modelName: models.displayName,
+          status: downloadQueue.status,
+          progressPct: downloadQueue.progressPct,
+          downloadedBytes: downloadQueue.downloadedBytes,
+          totalBytes: downloadQueue.totalBytes,
+          speedBps: downloadQueue.speedBps,
+          error: downloadQueue.error,
+        })
+        .from(downloadQueue)
+        .innerJoin(models, eq(downloadQueue.modelId, models.id))
+        .where(
+          inArray(downloadQueue.status, ["active", "queued", "completed"]),
+        );
+
+      // Merge: DB entries that aren't already tracked in-memory
+      const dbProgress = dbDownloads
+        .filter((d) => !inMemoryModelIds.has(d.modelId))
+        .map((d) => ({
+          modelId: d.modelId,
+          modelName: d.modelName,
+          priority: 0,
+          status: d.status as "active" | "queued" | "completed",
+          progressPct: d.progressPct ?? 0,
+          downloadedBytes: d.downloadedBytes ?? 0,
+          totalBytes: d.totalBytes ?? 0,
+          speedBps: d.speedBps ?? 0,
+          eta: null,
+          error: d.error ?? null,
+        }));
+
+      return [...inMemory, ...dbProgress];
     }),
 
   // Query: search models by name or description
@@ -282,6 +328,7 @@ export const modelRouter = {
         description: row.description ?? null,
         type: row.type as ModelInfo["type"],
         format: (row.format ?? "gguf") as ModelInfo["format"],
+        backend: (row.backend ?? null) as ModelInfo["backend"],
         variant: row.variant ?? null,
         repo: row.repo ?? null,
         fileName: row.fileName ?? null,

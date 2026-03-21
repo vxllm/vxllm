@@ -50,7 +50,8 @@ export function DownloadedModelRow({
       onSuccess: () => {
         toast.success(`Deleted model: ${displayName}`);
         queryClient.invalidateQueries({
-          queryKey: orpc.models.list.queryOptions({ input: {} }).queryKey,
+          predicate: (query) =>
+            JSON.stringify(query.queryKey).includes("list"),
         });
       },
     }),

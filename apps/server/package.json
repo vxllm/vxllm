@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "@vxllm/server",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {

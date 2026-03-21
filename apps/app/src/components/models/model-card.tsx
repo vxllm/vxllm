@@ -56,10 +56,10 @@ export function ModelCard({
       onSuccess: () => {
         toast.success(`Download started: ${displayName}`);
         queryClient.invalidateQueries({
-          queryKey: orpc.models.list.queryOptions({ input: {} }).queryKey,
-        });
-        queryClient.invalidateQueries({
-          queryKey: orpc.models.getDownloadStatus.queryOptions({ input: {} }).queryKey,
+          predicate: (query) => {
+            const key = JSON.stringify(query.queryKey);
+            return key.includes("models") && (key.includes("list") || key.includes("getDownloadStatus"));
+          },
         });
       },
       onError: (err) => {

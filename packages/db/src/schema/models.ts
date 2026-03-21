@@ -18,7 +18,10 @@ export const models = sqliteTable(
     displayName: text("display_name").notNull(),
     description: text("description"),
     type: text("type", { enum: ["llm", "stt", "tts", "embedding"] }).notNull(),
-    format: text("format", { enum: ["gguf", "whisper", "kokoro"] }),
+    format: text("format", { enum: ["gguf", "whisper", "kokoro", "nemo"] }),
+    backend: text("backend", {
+      enum: ["llama-cpp", "faster-whisper", "nemo", "kokoro", "whisper-cpp"],
+    }),
     variant: text("variant"),
     repo: text("repo"),
     fileName: text("file_name"),

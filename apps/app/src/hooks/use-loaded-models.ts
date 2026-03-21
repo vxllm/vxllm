@@ -1,45 +1,60 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
 import { orpc } from "@/utils/orpc";
 
 type ModelType = "llm" | "embedding" | "stt" | "tts";
 
+// Stable query key for invalidation — avoids recreating on every render
+const loadedModelsQueryKey = orpc.models.getLoadedModels.queryOptions().queryKey;
+
 export function useLoadedModels() {
   const queryClient = useQueryClient();
 
   const loadedModelsQuery = useQuery({
-    ...orpc.models.getLoadedModels.queryOptions({}),
+    ...orpc.models.getLoadedModels.queryOptions(),
     refetchInterval: 5000,
   });
 
-  const loadModelMutation = useMutation(
-    orpc.models.loadModel.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: orpc.models.getLoadedModels.queryOptions({}).queryKey,
-        });
-        toast.success("Model loaded");
-      },
-      onError: (error) => {
-        toast.error(`Failed to load model: ${error.message}`);
-      },
-    }),
+  const onLoadSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: loadedModelsQueryKey });
+    toast.success("Model loaded");
+  }, [queryClient]);
+
+  const onLoadError = useCallback((error: Error) => {
+    toast.error(`Failed to load model: ${error.message}`);
+  }, []);
+
+  const onUnloadSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: loadedModelsQueryKey });
+    toast.success("Model unloaded");
+  }, [queryClient]);
+
+  const onUnloadError = useCallback((error: Error) => {
+    toast.error(`Failed to unload model: ${error.message}`);
+  }, []);
+
+  const loadMutationOptions = useMemo(
+    () =>
+      orpc.models.loadModel.mutationOptions({
+        onSuccess: onLoadSuccess,
+        onError: onLoadError,
+      }),
+    [onLoadSuccess, onLoadError],
   );
 
-  const unloadModelMutation = useMutation(
-    orpc.models.unloadModel.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: orpc.models.getLoadedModels.queryOptions({}).queryKey,
-        });
-        toast.success("Model unloaded");
-      },
-      onError: (error) => {
-        toast.error(`Failed to unload model: ${error.message}`);
-      },
-    }),
+  const unloadMutationOptions = useMemo(
+    () =>
+      orpc.models.unloadModel.mutationOptions({
+        onSuccess: onUnloadSuccess,
+        onError: onUnloadError,
+      }),
+    [onUnloadSuccess, onUnloadError],
   );
+
+  const loadModelMutation = useMutation(loadMutationOptions);
+  const unloadModelMutation = useMutation(unloadMutationOptions);
 
   return {
     llm: loadedModelsQuery.data?.llm ?? null,

@@ -12,6 +12,7 @@ export interface RegistryVariant {
   sizeBytes: number;
   minRamGb: number | null;
   recommendedVramGb: number | null;
+  backend?: string;
 }
 
 /** Raw model entry as stored in models.json (with a variants array) */
@@ -19,10 +20,11 @@ export interface RegistryModel {
   name: string;
   displayName: string;
   type: "llm" | "stt" | "tts" | "embedding";
-  format: "gguf" | "whisper" | "kokoro";
+  format: "gguf" | "whisper" | "kokoro" | "nemo";
   description: string;
   tags: string[];
   variants: RegistryVariant[];
+  backend?: string;
 }
 
 /** Root structure of models.json */
@@ -104,6 +106,7 @@ export class Registry {
       description: model.description,
       type: model.type,
       format: model.format,
+      backend: (variant.backend ?? model.backend ?? null) as ModelInfo["backend"],
       variant: variant.variant,
       repo: variant.repo,
       fileName: variant.fileName,

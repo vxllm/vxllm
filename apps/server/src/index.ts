@@ -34,6 +34,7 @@ import { hfSearch } from "./routes/api/hf-search";
 import { hfFiles } from "./routes/api/hf-files";
 import { hfDownload } from "./routes/api/hf-download";
 import { createAudioRoutes } from "./routes/v1/audio";
+import { createApiChatRoute } from "./routes/api/chat";
 import { wsRoutes, websocket } from "./routes/ws/audio-stream";
 import { createVoiceChatRoute } from "./routes/ws/chat-voice";
 
@@ -41,6 +42,8 @@ import { createVoiceChatRoute } from "./routes/ws/chat-voice";
 const modelManager = new ModelManager();
 const registry = new Registry();
 const downloadManager = new DownloadManager(registry);
+// Tracks whether startup() has completed (registry loaded, models initialized)
+export let startupComplete = false;
 const startTime = Date.now();
 
 // ── App Setup ─────────────────────────────────────────────────────────────────
@@ -82,6 +85,9 @@ app.route("/v1", createModelsRoute());
 
 // ── Audio / Voice API (proxied to Python voice service) ────────────────────────
 app.route("/v1/audio", createAudioRoutes());
+
+// ── Frontend Chat API (AI SDK v6 UIMessage protocol) ──────────────────────────
+app.route("/api/chat", createApiChatRoute({ modelManager }));
 
 // ── Model Management API ──────────────────────────────────────────────────────
 app.route("/api/models/search/hf", hfSearch);
@@ -234,6 +240,7 @@ async function startup() {
             description: model.description ?? null,
             type: model.type as ModelInfo["type"],
             format: (model.format ?? "gguf") as ModelInfo["format"],
+            backend: (model.backend ?? null) as ModelInfo["backend"],
             variant: model.variant ?? null,
             repo: model.repo ?? null,
             fileName: model.fileName ?? null,
@@ -256,28 +263,54 @@ async function startup() {
     // Fallback: if no persisted models exist and DEFAULT_MODEL is set, use it for first boot
     if (!hasPersistedModels && env.DEFAULT_MODEL) {
       console.log(`[startup] No persisted models — falling back to DEFAULT_MODEL: ${env.DEFAULT_MODEL}`);
-      const resolvedModel = await registry.resolve(env.DEFAULT_MODEL);
-      if (resolvedModel?.localPath) {
+
+      // Look up the model from DB by name (registry doesn't know local paths)
+      const [dbModel] = await db
+        .select()
+        .from(models)
+        .where(eq(models.name, env.DEFAULT_MODEL))
+        .limit(1);
+
+      if (dbModel && dbModel.status === "downloaded" && dbModel.localPath) {
         try {
-          const loaded = await modelManager.load(resolvedModel);
+          const modelInfo: ModelInfo = {
+            name: dbModel.name,
+            displayName: dbModel.displayName,
+            description: dbModel.description ?? null,
+            type: dbModel.type as ModelInfo["type"],
+            format: (dbModel.format ?? "gguf") as ModelInfo["format"],
+            backend: (dbModel.backend ?? null) as ModelInfo["backend"],
+            variant: dbModel.variant ?? null,
+            repo: dbModel.repo ?? null,
+            fileName: dbModel.fileName ?? null,
+            downloadMethod: dbModel.format === "gguf" ? "file" : "repo",
+            localPath: dbModel.localPath,
+            sizeBytes: dbModel.sizeBytes ?? 0,
+            minRamGb: dbModel.minRamGb ?? null,
+            recommendedVramGb: dbModel.recommendedVramGb ?? null,
+            status: dbModel.status as ModelInfo["status"],
+          };
+          const loaded = await modelManager.load(modelInfo);
           console.log(`[startup] Model loaded: ${loaded.modelInfo.name} (session: ${loaded.sessionId})`);
           // Persist so next boot uses settings
           const now = Date.now();
           await db
             .insert(settings)
-            .values({ key: "loaded_llm_id", value: loaded.modelInfo.name, updatedAt: now })
-            .onConflictDoUpdate({ target: settings.key, set: { value: loaded.modelInfo.name, updatedAt: now } });
+            .values({ key: "loaded_llm_id", value: dbModel.id, updatedAt: now })
+            .onConflictDoUpdate({ target: settings.key, set: { value: dbModel.id, updatedAt: now } });
         } catch (err) {
           console.warn(`[startup] Failed to load DEFAULT_MODEL:`, err);
         }
+      } else {
+        console.log(`[startup] DEFAULT_MODEL "${env.DEFAULT_MODEL}" not found or not downloaded`);
       }
     }
 
+    startupComplete = true;
     console.log(`[startup] VxLLM server ready on ${env.HOST}:${env.PORT}`);
   } catch (err) {
     console.error("[startup] Initialization error:", err);
-    // Don't crash — the server can still serve API requests
-    // (they'll return 503 if no model is loaded)
+    startupComplete = true; // Allow serving even on partial failure
   }
 }
 

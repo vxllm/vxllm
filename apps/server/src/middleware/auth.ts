@@ -102,17 +102,22 @@ export async function authMiddleware(c: Context, next: Next) {
     return next();
   }
 
-  // Skip auth for localhost connections even in server mode
-  const host = c.req.header("host") ?? "";
-  const forwardedFor = c.req.header("x-forwarded-for");
-  const hostWithoutPort = host.split(":")[0];
+  // Skip auth for localhost connections even in server mode.
+  // Use Bun's actual TCP connection info — NOT the client-supplied Host header,
+  // which can be forged by remote attackers to bypass auth.
+  const connInfo = c.req.raw as unknown as { remoteAddr?: { address?: string } };
+  const remoteIp =
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+    connInfo?.remoteAddr?.address ??
+    "";
 
-  if (
-    !forwardedFor &&
-    (hostWithoutPort === "127.0.0.1" ||
-      hostWithoutPort === "localhost" ||
-      hostWithoutPort === "::1")
-  ) {
+  const isLocalConnection =
+    remoteIp === "127.0.0.1" ||
+    remoteIp === "::1" ||
+    remoteIp === "::ffff:127.0.0.1" ||
+    remoteIp === "localhost";
+
+  if (isLocalConnection) {
     return next();
   }
 
@@ -138,11 +143,27 @@ export async function authMiddleware(c: Context, next: Next) {
   // Hash the token and look it up
   const keyHash = await sha256(token);
 
-  const [keyRecord] = await db
-    .select()
-    .from(apiKeys)
-    .where(eq(apiKeys.keyHash, keyHash))
-    .limit(1);
+  let keyRecord;
+  try {
+    const [row] = await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.keyHash, keyHash))
+      .limit(1);
+    keyRecord = row;
+  } catch {
+    return c.json(
+      {
+        error: {
+          message: "Authentication service unavailable",
+          type: "server_error",
+          code: "internal_error",
+          param: null,
+        },
+      },
+      503,
+    );
+  }
 
   if (!keyRecord) {
     return unauthorized(c, "Invalid API key.");

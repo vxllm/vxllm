@@ -62,10 +62,12 @@ function ConversationPage() {
   const promptSentRef = useRef(false);
 
   // Auto-send the prompt from search params (used by example prompt cards)
+  const chatStatus = chat.status;
+  const chatSendMessage = chat.sendMessage;
   useEffect(() => {
-    if (prompt && !promptSentRef.current && chat.status === "ready") {
+    if (prompt && !promptSentRef.current && chatStatus === "ready") {
       promptSentRef.current = true;
-      chat.sendMessage({ text: prompt });
+      chatSendMessage({ text: prompt });
       // Clear the search param to avoid re-sending on re-render
       navigate({
         to: "/chat/$conversationId",
@@ -74,7 +76,7 @@ function ConversationPage() {
         replace: true,
       });
     }
-  }, [prompt, chat, conversationId, navigate]);
+  }, [prompt, chatStatus, chatSendMessage, conversationId, navigate]);
 
   const conversationQuery = useQuery({
     ...orpc.chat.getConversation.queryOptions({
@@ -117,9 +119,9 @@ function ConversationPage() {
 
   const handleSend = useCallback(
     (text: string) => {
-      chat.sendMessage({ text });
+      chatSendMessage({ text });
     },
-    [chat],
+    [chatSendMessage],
   );
 
   return (

@@ -34,9 +34,9 @@ import { DownloadedModelRow } from "@/components/models/downloaded-model-row";
 import { HfDownloadDialog } from "@/components/models/hf-download-dialog";
 import { ModelCard } from "@/components/models/model-card";
 import { orpc } from "@/utils/orpc";
+import { env } from "@vxllm/env/web";
 
-const SERVER_URL =
-  (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:11500";
+const SERVER_URL = env.VITE_SERVER_URL;
 
 interface HfModel {
   id: string;

@@ -36,7 +36,7 @@ export const chatRouter = {
       return row!;
     }),
 
-  // Query: get a single conversation by ID
+  // Query: get a single conversation by ID (returns null if not yet created)
   getConversation: publicProcedure
     .input(z.object({ id: z.string() }))
     .handler(async ({ input, context }) => {
@@ -46,11 +46,7 @@ export const chatRouter = {
         .where(eq(conversations.id, input.id))
         .limit(1);
 
-      if (!row) {
-        throw new Error(`Conversation not found: ${input.id}`);
-      }
-
-      return row;
+      return row ?? null;
     }),
 
   // Query: list conversations with pagination
@@ -283,7 +279,7 @@ export const chatRouter = {
       // Persist the new assistant message via shared service
       await persistChat({
         conversationId: input.conversationId,
-        modelId: active.modelInfo.name,
+        modelId: null,
         userContent: lastUserMsg?.content ?? "",
         assistantContent,
         tokensIn,
