@@ -78,6 +78,25 @@
       ]
     },
     {
+      "name": "qwen3-asr:0.6b",
+      "displayName": "Qwen3 ASR 0.6B",
+      "type": "stt",
+      "format": "whisper",
+      "description": "Qwen3 automatic speech recognition, multilingual, 428K+ downloads",
+      "tags": ["stt", "transcription", "multilingual", "qwen"],
+      "variants": [
+        {
+          "variant": "default",
+          "repo": "Qwen/Qwen3-ASR-0.6B",
+          "fileName": null,
+          "downloadMethod": "repo",
+          "sizeBytes": 1200000000,
+          "minRamGb": 2,
+          "recommendedVramGb": null
+        }
+      ]
+    },
+    {
       "name": "parakeet:tdt-v3",
       "displayName": "Parakeet TDT v3",
       "type": "stt",
