@@ -9,6 +9,7 @@ import {
 import { ApiKeysTable } from "@/components/settings/api-keys-table";
 import { CreateApiKeyDialog } from "@/components/settings/create-api-key-dialog";
 import { HardwareInfo } from "@/components/settings/hardware-info";
+import { LoadedModels } from "@/components/settings/loaded-models";
 import { ServerConfigForm } from "@/components/settings/server-config-form";
 
 export const Route = createFileRoute("/settings/")({
@@ -19,12 +20,16 @@ function SettingsPage() {
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-2xl font-bold">Settings</h1>
-      <Tabs defaultValue="server">
+      <Tabs defaultValue="models">
         <TabsList>
+          <TabsTrigger value="models">Models</TabsTrigger>
           <TabsTrigger value="server">Server</TabsTrigger>
           <TabsTrigger value="api-keys">API Keys</TabsTrigger>
           <TabsTrigger value="hardware">Hardware</TabsTrigger>
         </TabsList>
+        <TabsContent value="models">
+          <LoadedModels />
+        </TabsContent>
         <TabsContent value="server">
           <ServerConfigForm />
         </TabsContent>
