@@ -148,7 +148,7 @@ export function createVoiceChatRoute(deps: { modelManager: ModelManager }) {
         };
       },
 
-      onMessage(evt, ws) {
+      onMessage(evt, _ws) {
         const data = evt.data;
 
         // Only accept binary audio frames — no JSON config messages in new protocol
