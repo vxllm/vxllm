@@ -10,8 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@vxllm/ui/components/select";
-import { BotIcon } from "lucide-react";
+import { BotIcon, Loader2Icon, CircleIcon } from "lucide-react";
 
+import { useActiveModel } from "@/hooks/use-active-model";
 import { orpc } from "@/utils/orpc";
 
 export function ModelSelector({
@@ -27,6 +28,8 @@ export function ModelSelector({
     }),
   );
 
+  const { activeModel, isLoadingModel, loadModel } = useActiveModel();
+
   const models = modelsQuery.data ?? [];
 
   const llmModels = models.filter((m) => m.type === "llm");
@@ -34,26 +37,63 @@ export function ModelSelector({
 
   const hasModels = models.length > 0;
 
+  // Determine the displayed value: prefer the prop value, fall back to active model's DB id
+  const activeModelDbId = activeModel
+    ? models.find((m) => m.name === activeModel.modelInfo.name)?.id
+    : undefined;
+  const displayValue = value ?? activeModelDbId ?? "";
+
+  const handleValueChange = (val: string | null) => {
+    if (!val) return;
+
+    // Notify parent
+    onValueChange?.(val);
+
+    // Find the selected model and load it on the server
+    const selectedModel = models.find((m) => m.id === val);
+    if (selectedModel) {
+      // Don't reload if it's already the active model
+      const isAlreadyActive =
+        activeModel?.modelInfo.name === selectedModel.name;
+      if (!isAlreadyActive) {
+        loadModel({ id: val });
+      }
+    }
+  };
+
   return (
     <Select
-      value={value ?? ""}
-      onValueChange={(val) => {
-        if (val && onValueChange) {
-          onValueChange(val as string);
-        }
-      }}
+      value={displayValue}
+      onValueChange={handleValueChange}
+      disabled={isLoadingModel}
     >
       <SelectTrigger size="sm" className="max-w-[220px]">
-        <SelectValue placeholder={hasModels ? "Select model..." : "No models"}>
-          {value ? (
-            <span className="flex items-center gap-1.5 truncate">
-              <BotIcon className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="truncate">
-                {models.find((m) => m.id === value)?.displayName ?? value}
+        {isLoadingModel ? (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Loader2Icon className="size-3.5 shrink-0 animate-spin" />
+            <span className="truncate">Loading model...</span>
+          </span>
+        ) : (
+          <SelectValue
+            placeholder={hasModels ? "Select model..." : "No models"}
+          >
+            {displayValue ? (
+              <span className="flex items-center gap-1.5 truncate">
+                {activeModel &&
+                activeModel.modelInfo.name ===
+                  models.find((m) => m.id === displayValue)?.name ? (
+                  <CircleIcon className="size-2.5 shrink-0 fill-green-500 text-green-500" />
+                ) : (
+                  <BotIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                )}
+                <span className="truncate">
+                  {models.find((m) => m.id === displayValue)?.displayName ??
+                    displayValue}
+                </span>
               </span>
-            </span>
-          ) : null}
-        </SelectValue>
+            ) : null}
+          </SelectValue>
+        )}
       </SelectTrigger>
       <SelectContent align="end" alignItemWithTrigger={false}>
         {modelsQuery.isLoading ? (
@@ -72,6 +112,9 @@ export function ModelSelector({
                 {llmModels.map((model) => (
                   <SelectItem key={model.id} value={model.id}>
                     <span className="flex items-center gap-2">
+                      {activeModel?.modelInfo.name === model.name ? (
+                        <CircleIcon className="size-2 shrink-0 fill-green-500 text-green-500" />
+                      ) : null}
                       <span className="truncate">{model.displayName}</span>
                       {model.variant && (
                         <Badge
@@ -95,6 +138,9 @@ export function ModelSelector({
                 {embeddingModels.map((model) => (
                   <SelectItem key={model.id} value={model.id}>
                     <span className="flex items-center gap-2">
+                      {activeModel?.modelInfo.name === model.name ? (
+                        <CircleIcon className="size-2 shrink-0 fill-green-500 text-green-500" />
+                      ) : null}
                       <span className="truncate">{model.displayName}</span>
                       {model.variant && (
                         <Badge

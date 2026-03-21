@@ -57,3 +57,41 @@ export const DownloadStatusOutput = z.object({
   createdAt: z.number().int(),
 });
 export type DownloadStatusOutput = z.infer<typeof DownloadStatusOutput>;
+
+// ── Load Model Input ───────────────────────────────────────────────────────
+export const LoadModelInput = z.object({
+  id: z.string().min(1),
+});
+export type LoadModelInput = z.infer<typeof LoadModelInput>;
+
+// ── Unload Model Input ─────────────────────────────────────────────────────
+export const UnloadModelInput = z.object({
+  sessionId: z.string().min(1),
+});
+export type UnloadModelInput = z.infer<typeof UnloadModelInput>;
+
+// ── Loaded Model Output ────────────────────────────────────────────────────
+export const LoadedModelOutput = z.object({
+  modelInfo: z.object({
+    name: z.string(),
+    displayName: z.string(),
+    description: z.string().nullable(),
+    type: z.enum(["llm", "stt", "tts", "embedding"]),
+    format: z.enum(["gguf", "whisper", "kokoro"]),
+    variant: z.string().nullable(),
+    repo: z.string().nullable(),
+    fileName: z.string().nullable(),
+    downloadMethod: z.enum(["file", "repo"]),
+    localPath: z.string().nullable(),
+    sizeBytes: z.number(),
+    minRamGb: z.number().nullable(),
+    recommendedVramGb: z.number().nullable(),
+    status: z.enum(["available", "downloading", "downloaded", "error"]),
+  }),
+  sessionId: z.string(),
+  memoryUsageBytes: z.number(),
+  gpuLayersLoaded: z.number(),
+  contextSize: z.number(),
+  createdAt: z.number(),
+});
+export type LoadedModelOutput = z.infer<typeof LoadedModelOutput>;

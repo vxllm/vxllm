@@ -17,9 +17,10 @@ import { Input } from "@vxllm/ui/components/input";
 import { ScrollArea } from "@vxllm/ui/components/scroll-area";
 import { useDebounce } from "@vxllm/ui/hooks/use-debounce";
 import { Skeleton } from "@vxllm/ui/components/skeleton";
-import { MessageSquarePlus, Search, Trash2 } from "lucide-react";
+import { CircleIcon, MessageSquarePlus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { useActiveModel } from "@/hooks/use-active-model";
 import { groupConversationsByDate, truncateTitle } from "@/lib/chat";
 import { orpc } from "@/utils/orpc";
 
@@ -131,11 +132,38 @@ export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
       </ScrollArea>
 
       {/* Footer: active model badge */}
+      <ActiveModelBadge />
+    </div>
+  );
+}
+
+function ActiveModelBadge() {
+  const { activeModel, isLoadingQuery } = useActiveModel();
+
+  if (isLoadingQuery) {
+    return (
       <div className="border-t p-3">
-        <Badge variant="secondary" className="w-full justify-center text-xs">
-          No model loaded
+        <Skeleton className="h-5 w-full" />
+      </div>
+    );
+  }
+
+  if (activeModel) {
+    return (
+      <div className="border-t p-3">
+        <Badge variant="secondary" className="w-full justify-center gap-1.5 text-xs">
+          <CircleIcon className="size-2 shrink-0 fill-green-500 text-green-500" />
+          {activeModel.modelInfo.displayName}
         </Badge>
       </div>
+    );
+  }
+
+  return (
+    <div className="border-t p-3">
+      <Badge variant="secondary" className="w-full justify-center text-xs text-muted-foreground">
+        No model loaded
+      </Badge>
     </div>
   );
 }

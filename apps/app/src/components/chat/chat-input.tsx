@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Button } from "@vxllm/ui/components/button";
 import { Textarea } from "@vxllm/ui/components/textarea";
 import type { ChatStatus } from "ai";
@@ -5,6 +6,7 @@ import { ArrowUpIcon, SquareIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { VoiceRecorder } from "@/components/chat/voice-recorder";
+import { useActiveModel } from "@/hooks/use-active-model";
 
 export function ChatInput({
   onSend,
@@ -19,15 +21,19 @@ export function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isStreaming = status === "streaming" || status === "submitted";
 
+  const { activeModel, isLoadingModel } = useActiveModel();
+  const hasModel = activeModel !== null;
+  const isDisabled = !hasModel || isLoadingModel;
+
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
-    if (!trimmed || isStreaming) return;
+    if (!trimmed || isStreaming || isDisabled) return;
     onSend(trimmed);
     setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [input, isStreaming, onSend]);
+  }, [input, isStreaming, isDisabled, onSend]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -64,13 +70,18 @@ export function ChatInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          placeholder={
+            isDisabled
+              ? "Load a model to start chatting..."
+              : "Type a message..."
+          }
           className="min-h-[40px] max-h-[200px] resize-none"
           rows={1}
+          disabled={isDisabled}
         />
         <VoiceRecorder
           onTranscription={(text) => onSend(text)}
-          disabled={isStreaming}
+          disabled={isStreaming || isDisabled}
         />
         {isStreaming ? (
           <Button variant="outline" size="icon" onClick={onStop} type="button">
@@ -80,7 +91,7 @@ export function ChatInput({
           <Button
             size="icon"
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isDisabled}
             type="button"
           >
             <ArrowUpIcon className="size-4" />
@@ -88,7 +99,19 @@ export function ChatInput({
         )}
       </div>
       <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-        <span>Cmd+Enter to send</span>
+        {isDisabled ? (
+          <span>
+            No model loaded.{" "}
+            <Link
+              to="/models"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Go to Models
+            </Link>
+          </span>
+        ) : (
+          <span>Cmd+Enter to send</span>
+        )}
       </div>
     </div>
   );

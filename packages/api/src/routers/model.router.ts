@@ -3,8 +3,14 @@ import { eq, and, like } from "drizzle-orm";
 import fs from "node:fs";
 
 import { publicProcedure } from "../index";
-import { ModelFilterInput, ModelDownloadInput } from "../schemas/models";
+import {
+  ModelFilterInput,
+  ModelDownloadInput,
+  LoadModelInput,
+  UnloadModelInput,
+} from "../schemas/models";
 import { models } from "@vxllm/db/schema/models";
+import type { ModelInfo } from "@vxllm/inference";
 
 export const modelRouter = {
   // Query: list all models with optional filters
@@ -143,4 +149,84 @@ export const modelRouter = {
       const results = await context.registry.search(input.query);
       return results;
     }),
+
+  // Mutation: load a downloaded model into memory for inference
+  loadModel: publicProcedure
+    .input(LoadModelInput)
+    .handler(async ({ input, context }) => {
+      if (!context.modelManager) {
+        throw new Error("ModelManager not available");
+      }
+
+      // Get model from DB
+      const [row] = await context.db
+        .select()
+        .from(models)
+        .where(eq(models.id, input.id))
+        .limit(1);
+
+      if (!row) {
+        throw new Error(`Model not found: ${input.id}`);
+      }
+
+      if (row.status !== "downloaded") {
+        throw new Error(
+          `Model "${row.displayName}" is not downloaded. Download it first.`,
+        );
+      }
+
+      if (!row.localPath) {
+        throw new Error(
+          `Model "${row.displayName}" has no local path. Re-download it.`,
+        );
+      }
+
+      // Unload any currently active model before loading a new one
+      const active = context.modelManager.getActive();
+      if (active) {
+        await context.modelManager.unload(active.sessionId);
+      }
+
+      // Convert DB row to ModelInfo
+      const modelInfo: ModelInfo = {
+        name: row.name,
+        displayName: row.displayName,
+        description: row.description ?? null,
+        type: row.type as ModelInfo["type"],
+        format: (row.format ?? "gguf") as ModelInfo["format"],
+        variant: row.variant ?? null,
+        repo: row.repo ?? null,
+        fileName: row.fileName ?? null,
+        downloadMethod: row.format === "gguf" ? "file" : "repo",
+        localPath: row.localPath,
+        sizeBytes: row.sizeBytes ?? 0,
+        minRamGb: row.minRamGb ?? null,
+        recommendedVramGb: row.recommendedVramGb ?? null,
+        status: row.status as ModelInfo["status"],
+      };
+
+      const loadedModel = await context.modelManager.load(modelInfo);
+      return loadedModel;
+    }),
+
+  // Mutation: unload a model from memory
+  unloadModel: publicProcedure
+    .input(UnloadModelInput)
+    .handler(async ({ input, context }) => {
+      if (!context.modelManager) {
+        throw new Error("ModelManager not available");
+      }
+
+      await context.modelManager.unload(input.sessionId);
+      return { success: true };
+    }),
+
+  // Query: get the currently active (loaded) model
+  getActiveModel: publicProcedure.handler(async ({ context }) => {
+    if (!context.modelManager) {
+      return null;
+    }
+
+    return context.modelManager.getActive();
+  }),
 };
