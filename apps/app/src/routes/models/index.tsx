@@ -114,7 +114,7 @@ function ModelsPage() {
   const activeHfQuery = hasSearched ? hfSearchQuery : hfPopularQuery;
   const hfModels = activeHfQuery.data?.models ?? [];
 
-  // Downloaded models
+  // Downloaded models (from database)
   const downloadedQuery = useQuery(
     orpc.models.list.queryOptions({
       input: {
@@ -125,20 +125,24 @@ function ModelsPage() {
     }),
   );
 
-  // All models from registry (available + downloaded)
-  const allModelsQuery = useQuery(
-    orpc.models.list.queryOptions({
-      input: {
-        type: typeFilter !== "all" ? typeFilter : undefined,
-        search: debouncedSearch || undefined,
-      },
+  // Available models from curated registry (models.json)
+  const registryQuery = useQuery(
+    orpc.models.search.queryOptions({
+      input: { query: debouncedSearch || " " },
     }),
   );
 
   const downloadedModels = downloadedQuery.data ?? [];
-  const allModels = allModelsQuery.data ?? [];
-  const downloadedIds = new Set(downloadedModels.map((m) => m.id));
-  const availableModels = allModels.filter((m) => !downloadedIds.has(m.id));
+  const registryModels = registryQuery.data ?? [];
+
+  // Filter registry models by type (client-side since search doesn't accept type)
+  const filteredRegistry = typeFilter === "all"
+    ? registryModels
+    : registryModels.filter((m: any) => m.type === typeFilter);
+
+  // Exclude already-downloaded models from available list
+  const downloadedNames = new Set(downloadedModels.map((m) => m.name));
+  const availableModels = filteredRegistry.filter((m: any) => !downloadedNames.has(m.name));
 
   return (
     <div className="space-y-6 p-6">
@@ -216,7 +220,7 @@ function ModelsPage() {
       {/* Available models */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Available Models</h2>
-        {allModelsQuery.isLoading ? (
+        {registryQuery.isLoading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-40 w-full rounded-xl" />
@@ -232,10 +236,10 @@ function ModelsPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {availableModels.map((model) => (
               <ModelCard
-                key={model.id}
+                key={model.name}
                 name={model.name}
-                displayName={model.displayName}
-                description={model.description}
+                displayName={model.displayName ?? model.name}
+                description={model.description ?? ""}
                 type={model.type}
                 sizeBytes={model.sizeBytes}
                 minRamGb={model.minRamGb}
