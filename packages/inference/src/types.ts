@@ -103,6 +103,8 @@ export interface LoadedModel {
 export interface DownloadProgress {
   /** Model identifier being downloaded */
   modelId: string;
+  /** Human-readable model name */
+  modelName: string;
   /** Download priority (lower = higher priority) */
   priority: number;
   /** Current download status */

@@ -55,7 +55,7 @@ function RootComponent() {
       >
         <div className="flex h-svh overflow-hidden">
           <AppNav />
-          <main className="min-w-0 flex-1 h-full">
+          <main className="min-w-0 flex-1 h-full overflow-y-auto">
             <Outlet />
           </main>
         </div>

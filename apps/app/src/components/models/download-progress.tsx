@@ -78,7 +78,7 @@ export function DownloadProgress() {
         {activeDownloads.map((dl) => (
           <div key={dl.modelId} className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{dl.modelId}</span>
+              <span className="text-sm font-medium">{dl.modelName || dl.modelId}</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
                   {formatSpeed(dl.speedBps)} | ETA: {formatEta(dl.speedBps, dl.downloadedBytes, dl.totalBytes)}

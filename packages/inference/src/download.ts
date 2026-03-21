@@ -35,12 +35,14 @@ export class DownloadManager {
    */
   private initProgress(
     modelId: string,
+    modelName: string,
     totalBytes: number,
     priority: number,
     status: DownloadProgress["status"] = "queued",
   ): DownloadProgress {
     const progress: DownloadProgress = {
       modelId,
+      modelName,
       priority,
       status,
       progressPct: 0,
@@ -93,6 +95,7 @@ export class DownloadManager {
     if (existing.length > 0 && existing[0]!.status === "downloaded") {
       const progress = this.initProgress(
         existing[0]!.id,
+        modelInfo.displayName ?? modelInfo.name,
         modelInfo.sizeBytes,
         priority,
         "completed",
@@ -106,7 +109,7 @@ export class DownloadManager {
     if (this.activeDownloads.size >= env.MAX_CONCURRENT_DOWNLOADS) {
       // Queue it — create DB entries but don't start
       const modelId = await this.ensureDbEntries(modelInfo, priority, "queued");
-      return this.initProgress(modelId, modelInfo.sizeBytes, priority, "queued");
+      return this.initProgress(modelId, modelInfo.displayName ?? modelInfo.name, modelInfo.sizeBytes, priority, "queued");
     }
 
     // 5. Create/update DB entries
@@ -135,6 +138,7 @@ export class DownloadManager {
     // 6. Start the actual download
     const progress = this.initProgress(
       modelId,
+      modelInfo.displayName ?? modelInfo.name,
       modelInfo.sizeBytes,
       priority,
       "active",
