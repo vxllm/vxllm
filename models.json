@@ -11,8 +11,8 @@
       "variants": [
         {
           "variant": "q4_k_m",
-          "repo": "unsloth/Qwen3-4B-GGUF",
-          "fileName": "Qwen3-4B-Q4_K_M.gguf",
+          "repo": "Qwen/Qwen3-4B-GGUF",
+          "fileName": "qwen3-4b-q4_k_m.gguf",
           "downloadMethod": "file",
           "sizeBytes": 2500000000,
           "minRamGb": 3,
@@ -59,6 +59,25 @@
       ]
     },
     {
+      "name": "distil-whisper:large-v3",
+      "displayName": "Distil Whisper Large v3",
+      "type": "stt",
+      "format": "whisper",
+      "description": "Distilled Whisper — 6x faster, 49% smaller, within 1% WER",
+      "tags": ["stt", "transcription", "fast", "distilled"],
+      "variants": [
+        {
+          "variant": "default",
+          "repo": "distil-whisper/distil-large-v3",
+          "fileName": null,
+          "downloadMethod": "repo",
+          "sizeBytes": 1510000000,
+          "minRamGb": 2,
+          "recommendedVramGb": null
+        }
+      ]
+    },
+    {
       "name": "parakeet:tdt-v3",
       "displayName": "Parakeet TDT v3",
       "type": "stt",
@@ -68,7 +87,7 @@
       "variants": [
         {
           "variant": "default",
-          "repo": "nvidia/parakeet-tdt-0.6b-v2",
+          "repo": "nvidia/parakeet-tdt-0.6b-v3",
           "fileName": null,
           "downloadMethod": "repo",
           "sizeBytes": 600000000,
@@ -87,7 +106,7 @@
       "variants": [
         {
           "variant": "default",
-          "repo": "Qwen/Qwen3-TTS-0.6B",
+          "repo": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
           "fileName": null,
           "downloadMethod": "repo",
           "sizeBytes": 1200000000,
