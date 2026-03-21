@@ -27,7 +27,7 @@ export function Footer() {
             Docs
           </a>
           <a
-            href="https://github.com/vxllm"
+            href="https://github.com/datahase"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"

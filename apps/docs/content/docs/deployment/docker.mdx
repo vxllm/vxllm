@@ -12,8 +12,8 @@ VxLLM provides Docker images for the server and voice service, orchestrated with
 Pull from Docker Hub and run:
 
 ```bash
-docker pull vxllm/vxllm
-docker run -p 11500:11500 vxllm/vxllm
+docker pull datahase/vxllm
+docker run -p 11500:11500 datahase/vxllm
 ```
 
 The server will be available at `http://localhost:11500`.
@@ -25,7 +25,7 @@ For the full stack (server + voice service), create a `docker-compose.yml`:
 ```yaml
 services:
   server:
-    image: vxllm/vxllm:latest
+    image: datahase/vxllm:latest
     ports:
       - "11500:11500"
     environment:
@@ -41,7 +41,7 @@ services:
       - voice
 
   voice:
-    image: vxllm/vxllm-voice:latest
+    image: datahase/vxllm-voice:latest
     ports:
       - "11501:11501"
     environment:
@@ -137,7 +137,7 @@ Full compose file using Docker Hub images:
 ```yaml
 services:
   server:
-    image: vxllm/vxllm:latest
+    image: datahase/vxllm:latest
     ports:
       - "${PORT:-11500}:11500"
     environment:
@@ -153,7 +153,7 @@ services:
       - voice
 
   voice:
-    image: vxllm/vxllm-voice:latest
+    image: datahase/vxllm-voice:latest
     ports:
       - "${VOICE_PORT:-11501}:11501"
     environment:

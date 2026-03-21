@@ -2,10 +2,10 @@ import { AnimateOnScroll } from "./animate-on-scroll";
 import { Terminal } from "./terminal";
 
 const dockerLines = [
-  { type: "prompt" as const, text: "docker pull vxllm/vxllm" },
+  { type: "prompt" as const, text: "docker pull datahase/vxllm" },
   { type: "success" as const, text: "Image pulled (latest)" },
   { type: "spacer" as const },
-  { type: "prompt" as const, text: "docker run -p 11500:11500 vxllm/vxllm" },
+  { type: "prompt" as const, text: "docker run -p 11500:11500 datahase/vxllm" },
   {
     type: "success" as const,
     text: "VxLLM running at http://localhost:11500",

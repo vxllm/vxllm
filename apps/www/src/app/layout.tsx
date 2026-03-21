@@ -26,8 +26,8 @@ export const metadata: Metadata = {
     "llama.cpp",
     "GGUF",
   ],
-  authors: [{ name: "vxllm" }],
-  creator: "vxllm",
+  authors: [{ name: "DataHase" }],
+  creator: "DataHase",
   metadataBase: new URL("https://vxllm.com"),
   openGraph: {
     type: "website",
