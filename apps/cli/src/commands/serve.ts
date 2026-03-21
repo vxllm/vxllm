@@ -1,7 +1,7 @@
 import { defineCommand } from "citty";
 import consola from "consola";
 import path from "node:path";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
 
 export default defineCommand({
   meta: { name: "serve", description: "Start VxLLM server" },
@@ -37,7 +37,7 @@ export default defineCommand({
     process.env.HOST = args.host;
     if (args.model) process.env.DEFAULT_MODEL = args.model;
 
-    let voiceProcess: ChildProcess | null = null;
+    let voiceProcess: ReturnType<typeof spawn> | null = null;
 
     // Start Python voice service if --voice is enabled
     if (args.voice) {
@@ -64,12 +64,12 @@ export default defineCommand({
           },
         );
 
-        voiceProcess.on("error", (err) => {
+        voiceProcess.on("error", (err: any) => {
           consola.warn(`Voice service failed to start: ${err.message}`);
           consola.info("Voice features will be unavailable. Install Python + uv to enable.");
         });
 
-        voiceProcess.on("exit", (code) => {
+        voiceProcess.on("exit", (code: any) => {
           if (code !== null && code !== 0) {
             consola.warn(`Voice service exited with code ${code}`);
           }
