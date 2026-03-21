@@ -24,16 +24,16 @@ hfDownload.post("/", async (c) => {
   }
 
   const modelsDir = env.MODELS_DIR.replace("~", process.env.HOME ?? "~");
-  const typeDir = path.join(modelsDir, body.type);
-  fs.mkdirSync(typeDir, { recursive: true });
-
-  const destPath = path.join(typeDir, body.filename);
-  const downloadUrl = `https://huggingface.co/${body.repo}/resolve/main/${body.filename}`;
-
-  // Create DB entry
   const modelId = crypto.randomUUID();
   const modelName =
-    body.displayName || `${body.repo.split("/").pop()}/${body.filename}`;
+    body.displayName || `${body.repo.split("/").pop()}`;
+
+  // Create model subfolder: ~/.vxllm/models/<type>/<model-name>/
+  const modelDir = path.join(modelsDir, body.type, modelName.replace(/[/:]/g, "-"));
+  fs.mkdirSync(modelDir, { recursive: true });
+
+  const destPath = path.join(modelDir, body.filename);
+  const downloadUrl = `https://huggingface.co/${body.repo}/resolve/main/${body.filename}`;
 
   await db.insert(models).values({
     id: modelId,

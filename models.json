@@ -48,8 +48,8 @@
         {
           "variant": "default",
           "repo": "Systran/faster-whisper-large-v3-turbo",
-          "fileName": null,
-          "sizeBytes": 800000000,
+          "fileName": "model.bin",
+          "sizeBytes": 1510000000,
           "minRamGb": 2,
           "recommendedVramGb": null
         }
@@ -66,7 +66,7 @@
         {
           "variant": "default",
           "repo": "nvidia/parakeet-tdt-0.6b-v2",
-          "fileName": null,
+          "fileName": "parakeet-tdt-0.6b-v2.nemo",
           "sizeBytes": 600000000,
           "minRamGb": 1,
           "recommendedVramGb": null
@@ -84,7 +84,7 @@
         {
           "variant": "default",
           "repo": "Qwen/Qwen3-TTS-0.6B",
-          "fileName": null,
+          "fileName": "model.safetensors",
           "sizeBytes": 1200000000,
           "minRamGb": 2,
           "recommendedVramGb": null
@@ -102,7 +102,7 @@
         {
           "variant": "default",
           "repo": "hexgrad/Kokoro-82M",
-          "fileName": null,
+          "fileName": "kokoro-v0_19.pth",
           "sizeBytes": 330000000,
           "minRamGb": 0.5,
           "recommendedVramGb": null

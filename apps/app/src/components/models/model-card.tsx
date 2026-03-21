@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@vxllm/ui/components/card";
-import { Download, Loader2, Check, Mic } from "lucide-react";
+import { Download, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { orpc } from "@/utils/orpc";
@@ -21,7 +21,6 @@ interface ModelCardProps {
   sizeBytes: number | null;
   minRamGb: number | null;
   status: string;
-  format?: string | null;
 }
 
 const typeBadgeVariant: Record<string, "default" | "secondary" | "outline"> = {
@@ -49,12 +48,8 @@ export function ModelCard({
   sizeBytes,
   minRamGb,
   status,
-  format,
 }: ModelCardProps) {
   const queryClient = useQueryClient();
-
-  const isVoiceManaged =
-    (type === "stt" || type === "tts") && format !== "gguf";
 
   const downloadMutation = useMutation(
     orpc.models.download.mutationOptions({
@@ -100,7 +95,7 @@ export function ModelCard({
             )}
             {minRamGb != null && <span>RAM: {minRamGb} GB+</span>}
           </div>
-          {!isDownloaded && !isVoiceManaged && (
+          {!isDownloaded && (
             <Button
               variant="outline"
               size="sm"
@@ -114,12 +109,6 @@ export function ModelCard({
               )}
               {status === "downloading" ? "Downloading..." : "Download"}
             </Button>
-          )}
-          {isVoiceManaged && !isDownloaded && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Mic className="size-3" />
-              Auto-downloaded by voice service on first use
-            </span>
           )}
         </div>
       </CardContent>

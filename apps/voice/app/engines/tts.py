@@ -14,7 +14,7 @@ from typing import AsyncGenerator
 import numpy as np
 import soundfile as sf
 
-from app.config import TTS_VOICE
+from app.config import MODELS_DIR, TTS_VOICE
 
 logger = logging.getLogger(__name__)
 
@@ -40,15 +40,45 @@ class TTSEngine:
         self._default_voice: str = TTS_VOICE
 
     def load(self, lang_code: str = "a") -> None:
-        """Attempt to load the Kokoro TTS backend."""
+        """Attempt to load the Kokoro TTS backend.
+
+        First checks if a model was pre-downloaded by the unified
+        download manager into ``MODELS_DIR/tts/``.  If a ``.pth``
+        checkpoint is found there, it is passed to Kokoro.  Otherwise
+        falls back to Kokoro's default model resolution for backward
+        compatibility.
+        """
         if self._loaded:
             return
 
         logger.info("Loading Kokoro TTS pipeline...")
         try:
             from kokoro import KPipeline
+            from pathlib import Path
 
-            self.pipeline = KPipeline(lang_code=lang_code)
+            # Check for a pre-downloaded model in MODELS_DIR/tts/
+            tts_dir = Path(MODELS_DIR) / "tts"
+            local_model: str | None = None
+            if tts_dir.exists():
+                pth_files = list(tts_dir.glob("*.pth"))
+                if pth_files:
+                    local_model = str(pth_files[0])
+                    logger.info(
+                        "Found pre-downloaded TTS model: %s", local_model
+                    )
+
+            if local_model:
+                self.pipeline = KPipeline(
+                    lang_code=lang_code, model=local_model
+                )
+            else:
+                logger.info(
+                    "No pre-downloaded TTS model found in %s, "
+                    "using Kokoro default model resolution",
+                    tts_dir,
+                )
+                self.pipeline = KPipeline(lang_code=lang_code)
+
             self._loaded = True
             self._backend = "kokoro"
             logger.info("Kokoro TTS loaded successfully")

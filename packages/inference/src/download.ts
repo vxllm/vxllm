@@ -284,8 +284,12 @@ export class DownloadManager {
     // Update total bytes from the actual file info
     progress.totalBytes = info.size;
 
+    // Create model-specific subfolder: ~/.vxllm/models/<type>/<model-name>/
+    const modelDir = path.join(modelsDir, modelInfo.name.replace(/[/:]/g, "-"));
+    fs.mkdirSync(modelDir, { recursive: true });
+
     // Check for existing partial download to support resume
-    const destPath = path.join(modelsDir, modelInfo.fileName!);
+    const destPath = path.join(modelDir, modelInfo.fileName!);
     const tempPath = `${destPath}.download`;
     let resumeOffset = 0;
 
@@ -531,7 +535,8 @@ export class DownloadManager {
     if (modelInfo.fileName) {
       const modelsDir = this.getModelsDir();
       const typeDir = path.join(modelsDir, modelInfo.type);
-      const tempPath = path.join(typeDir, `${modelInfo.fileName}.download`);
+      const modelSubDir = path.join(typeDir, modelInfo.name.replace(/[/:]/g, "-"));
+      const tempPath = path.join(modelSubDir, `${modelInfo.fileName}.download`);
       if (fs.existsSync(tempPath)) {
         resumedBytes = fs.statSync(tempPath).size;
       }
@@ -605,8 +610,10 @@ export class DownloadManager {
       const modelsDir = this.getModelsDir();
       const modelType = modelRows[0]!.type;
       const typeDir = path.join(modelsDir, modelType);
-      const tempPath = path.join(typeDir, `${modelRows[0]!.fileName}.download`);
-      const finalPath = path.join(typeDir, modelRows[0]!.fileName);
+      const modelName = modelRows[0]!.name.replace(/[/:]/g, "-");
+      const modelSubDir = path.join(typeDir, modelName);
+      const tempPath = path.join(modelSubDir, `${modelRows[0]!.fileName}.download`);
+      const finalPath = path.join(modelSubDir, modelRows[0]!.fileName);
 
       // Remove temp file
       if (fs.existsSync(tempPath)) {

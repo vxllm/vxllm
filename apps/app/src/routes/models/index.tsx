@@ -246,7 +246,6 @@ function ModelsPage() {
                 sizeBytes={model.sizeBytes}
                 minRamGb={model.minRamGb}
                 status={model.status}
-                format={model.format}
               />
             ))}
           </div>

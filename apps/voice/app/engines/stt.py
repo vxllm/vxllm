@@ -36,9 +36,11 @@ class STTEngine:
     async def load(self) -> None:
         """Load the faster-whisper model.
 
-        The model binary is cached under ``MODELS_DIR/whisper/``.
-        If the model is not present it will be downloaded automatically
-        by faster-whisper from HuggingFace on first use.
+        First checks if the model was pre-downloaded by the unified
+        download manager into ``MODELS_DIR/stt/<model_name>/``.  If
+        found, loads from that local path.  Otherwise falls back to
+        faster-whisper's built-in download (cached under
+        ``MODELS_DIR/whisper/``) for backward compatibility.
         """
         if self._loaded:
             return
@@ -46,16 +48,54 @@ class STTEngine:
         try:
             from faster_whisper import WhisperModel
 
-            cache_dir = Path(MODELS_DIR) / "whisper"
-            cache_dir.mkdir(parents=True, exist_ok=True)
+            # Check for model pre-downloaded by VxLLM's unified download manager
+            # Try multiple possible folder names (registry name may differ from model name)
+            possible_dirs = [
+                Path(MODELS_DIR) / "stt" / self._model_name,
+                Path(MODELS_DIR) / "stt" / f"whisper-{self._model_name}",
+            ]
+            # Also scan all subdirs in stt/ for a model.bin
+            stt_dir = Path(MODELS_DIR) / "stt"
+            if stt_dir.exists():
+                for d in stt_dir.iterdir():
+                    if d.is_dir() and d not in possible_dirs:
+                        possible_dirs.append(d)
 
-            logger.info("Loading STT model '%s' …", self._model_name)
-            self._model = WhisperModel(
-                self._model_name,
-                device="cpu",
-                compute_type="int8",
-                download_root=str(cache_dir),
-            )
+            local_model_dir = None
+            for candidate in possible_dirs:
+                if candidate.exists() and (candidate / "model.bin").exists():
+                    local_model_dir = candidate
+                    break
+
+            if local_model_dir is not None:
+                logger.info(
+                    "Loading STT model '%s' from pre-downloaded path: %s",
+                    self._model_name,
+                    local_model_dir,
+                )
+                self._model = WhisperModel(
+                    str(local_model_dir),
+                    device="cpu",
+                    compute_type="int8",
+                )
+            else:
+                # Fallback: let faster-whisper auto-download into cache dir
+                cache_dir = Path(MODELS_DIR) / "whisper"
+                cache_dir.mkdir(parents=True, exist_ok=True)
+
+                logger.info(
+                    "Pre-downloaded STT model not found at %s, "
+                    "falling back to auto-download for '%s'",
+                    local_model_dir,
+                    self._model_name,
+                )
+                self._model = WhisperModel(
+                    self._model_name,
+                    device="cpu",
+                    compute_type="int8",
+                    download_root=str(cache_dir),
+                )
+
             self._loaded = True
             logger.info("STT model '%s' loaded successfully.", self._model_name)
         except Exception:
