@@ -7,7 +7,7 @@
     "vxllm": "./src/index.ts"
   },
   "scripts": {
-    "dev": "bun run src/index.ts",
+    "dev": "echo 'CLI ready. Use: bun run apps/cli/src/index.ts <command>'",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

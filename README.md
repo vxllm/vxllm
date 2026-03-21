@@ -115,18 +115,34 @@ vxllm/
 └── models.json           # Curated model registry
 ```
 
-## Development Commands
+## Development
+
+### Local Setup
 
 ```bash
-bun install              # Install all dependencies
-bun run dev              # Start all apps (web + server + docs)
-bun run dev:app          # Start app only
-bun run dev:server       # Start API server only
+git clone https://github.com/datahase/vxllm.git
+cd vxllm
+bun install
+bun run db:push
+```
+
+### Running
+
+```bash
+bun run dev              # Start all apps (app + server + docs + www)
+bun run dev:server       # Start API server only (port 11500)
+bun run dev:app          # Start frontend only (port 3001)
+bun run dev:docs         # Start docs site only (port 4000)
+bun run dev:www          # Start marketing site only (port 3000)
+```
+
+### Other Commands
+
+```bash
 bun run build            # Build all apps for production
 bun run check-types      # TypeScript type checking
 bun run db:push          # Push schema to database
 bun run db:generate      # Generate migrations
-bun run db:migrate       # Run migrations
 bun run db:studio        # Open Drizzle Studio
 ```
 
