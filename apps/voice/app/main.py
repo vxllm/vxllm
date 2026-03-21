@@ -15,6 +15,7 @@ from app.engines.stt import stt_engine
 from app.engines.tts import tts_engine
 from app.engines.vad import vad_engine
 from app.routes import health, speak, stream, transcribe, voices
+from app.routes.models import router as models_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,6 +72,7 @@ app.include_router(voices.router)
 app.include_router(transcribe.router)
 app.include_router(speak.router)
 app.include_router(stream.router)
+app.include_router(models_router)
 
 
 def start() -> None:

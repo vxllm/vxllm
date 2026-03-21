@@ -39,7 +39,7 @@ class TTSEngine:
         self._backend: str = "none"
         self._default_voice: str = TTS_VOICE
 
-    def load(self, lang_code: str = "a") -> None:
+    def load(self, lang_code: str = "a", model_path: str | None = None) -> None:
         """Attempt to load the Kokoro TTS backend.
 
         First checks if a model was pre-downloaded by the unified
@@ -49,6 +49,21 @@ class TTSEngine:
         compatibility.
         """
         if self._loaded:
+            return
+
+        # If a specific model path is provided, use it directly
+        if model_path is not None:
+            try:
+                from kokoro import KPipeline
+                logger.info("Loading TTS model from path: %s", model_path)
+                self.pipeline = KPipeline(lang_code=lang_code, model=model_path)
+                self._loaded = True
+                self._backend = "kokoro"
+                logger.info("Kokoro TTS loaded from %s", model_path)
+            except Exception as e:
+                logger.warning(f"Failed to load Kokoro from {model_path}: {e}. Using placeholder.")
+                self._loaded = True
+                self._backend = "placeholder"
             return
 
         logger.info("Loading Kokoro TTS pipeline...")
@@ -86,6 +101,15 @@ class TTSEngine:
             logger.warning(f"Failed to load Kokoro: {e}. Using placeholder.")
             self._loaded = True
             self._backend = "placeholder"
+
+    def unload(self) -> None:
+        """Unload the current TTS model and free resources."""
+        if not self._loaded:
+            return
+        self.pipeline = None
+        self._loaded = False
+        self._backend = "none"
+        logger.info("TTS model unloaded.")
 
     def is_loaded(self) -> bool:
         """Return whether any TTS backend has been loaded."""

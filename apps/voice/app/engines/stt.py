@@ -33,7 +33,7 @@ class STTEngine:
     def model_name(self) -> str:
         return self._model_name
 
-    async def load(self) -> None:
+    async def load(self, model_path: str | None = None) -> None:
         """Load the faster-whisper model.
 
         First checks if the model was pre-downloaded by the unified
@@ -43,6 +43,27 @@ class STTEngine:
         ``MODELS_DIR/whisper/``) for backward compatibility.
         """
         if self._loaded:
+            return
+
+        # If a specific path is provided, use it directly
+        if model_path is not None:
+            from faster_whisper import WhisperModel
+            from pathlib import Path
+
+            p = Path(model_path)
+            if p.is_dir() and (p / "model.bin").exists():
+                logger.info("Loading STT model from path: %s", model_path)
+                self._model = WhisperModel(
+                    str(p), device="cpu", compute_type="int8",
+                )
+            else:
+                logger.info("Loading STT model: %s", model_path)
+                self._model = WhisperModel(
+                    model_path, device="cpu", compute_type="int8",
+                )
+            self._model_name = p.name if p.is_dir() else model_path
+            self._loaded = True
+            logger.info("STT model '%s' loaded successfully.", self._model_name)
             return
 
         try:
@@ -101,6 +122,14 @@ class STTEngine:
         except Exception:
             logger.exception("Failed to load STT model '%s'", self._model_name)
             raise
+
+    async def unload(self) -> None:
+        """Unload the current STT model and free resources."""
+        if not self._loaded:
+            return
+        self._model = None
+        self._loaded = False
+        logger.info("STT model '%s' unloaded.", self._model_name)
 
     async def transcribe(
         self,
