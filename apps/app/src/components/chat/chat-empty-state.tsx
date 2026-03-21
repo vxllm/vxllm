@@ -3,11 +3,10 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@vxllm/ui/components/button";
 import { Card, CardContent } from "@vxllm/ui/components/card";
 import { Textarea } from "@vxllm/ui/components/textarea";
-import { ArrowUp, DownloadIcon, MenuIcon } from "lucide-react";
+import { ArrowUp, DownloadIcon, MenuIcon, SlidersHorizontalIcon } from "lucide-react";
 import { useRef, useState } from "react";
 
-import { useActiveModel } from "@/hooks/use-active-model";
-import { ModelSelector } from "@/components/chat/model-selector";
+import { useLoadedModels } from "@/hooks/use-loaded-models";
 import { useChatLayout } from "@/routes/chat/route";
 import { orpc } from "@/utils/orpc";
 
@@ -42,11 +41,11 @@ export function ChatEmptyState() {
     }),
   );
 
-  const { activeModel, unloadModel } = useActiveModel();
+  const { llm } = useLoadedModels();
 
   const downloadedModels = downloadedModelsQuery.data ?? [];
   const hasDownloadedModels = downloadedModels.length > 0;
-  const hasActiveModel = activeModel !== null;
+  const hasActiveModel = llm !== null;
 
   const handleSend = (text: string) => {
     if (!text.trim() || !hasActiveModel) return;
@@ -118,83 +117,63 @@ export function ChatEmptyState() {
               <p className="max-w-sm text-sm text-muted-foreground">
                 {hasActiveModel
                   ? "Choose a prompt below or type your own message to get started."
-                  : "Select a model from the dropdown above, then start chatting."}
+                  : "Load a model from Settings to start chatting."}
               </p>
             </div>
 
-            {/* Model selector — shown when models are downloaded but none active */}
-            {hasDownloadedModels && !hasActiveModel && (
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-sm text-amber-600 dark:text-amber-400">
-                  Select a model to load:
-                </p>
-                <ModelSelector />
-              </div>
-            )}
-
-            {/* Active model indicator with unload option */}
-            {hasActiveModel && (
-              <div className="flex items-center gap-2">
-                <ModelSelector />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground"
-                  onClick={() => {
-                    if (activeModel?.sessionId) {
-                      unloadModel({ sessionId: activeModel.sessionId });
-                    }
-                  }}
-                >
-                  Unload
-                </Button>
-              </div>
+            {/* No model loaded — show Settings link */}
+            {!hasActiveModel && (
+              <Button variant="outline" render={<Link to="/settings" />}>
+                <SlidersHorizontalIcon className="mr-2 size-4" />
+                Go to Settings
+              </Button>
             )}
           </div>
 
-          <div className="grid w-full max-w-lg grid-cols-2 gap-3">
-            {EXAMPLE_PROMPTS.map((item) => (
-              <Card
-                key={item.title}
-                size="sm"
-                className={`transition-colors ${hasActiveModel ? "cursor-pointer hover:bg-muted/50" : "cursor-not-allowed opacity-50"}`}
-                onClick={() => handlePromptClick(item.prompt)}
-              >
-                <CardContent>
-                  <p className="text-sm font-medium">{item.title}</p>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                    {item.prompt}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Chat input — shown when a model is loaded */}
           {hasActiveModel && (
-            <div className="w-full max-w-lg">
-              <div className="flex gap-2 items-end">
-                <Textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type a message..."
-                  className="min-h-[44px] max-h-[120px] resize-none"
-                  rows={1}
-                />
-                <Button
-                  size="icon"
-                  onClick={() => handleSend(input)}
-                  disabled={!input.trim()}
-                >
-                  <ArrowUp className="size-4" />
-                </Button>
+            <>
+              <div className="grid w-full max-w-lg grid-cols-2 gap-3">
+                {EXAMPLE_PROMPTS.map((item) => (
+                  <Card
+                    key={item.title}
+                    size="sm"
+                    className="cursor-pointer transition-colors hover:bg-muted/50"
+                    onClick={() => handlePromptClick(item.prompt)}
+                  >
+                    <CardContent>
+                      <p className="text-sm font-medium">{item.title}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        {item.prompt}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <p className="mt-1.5 text-center text-xs text-muted-foreground">
-                ⌘+Enter to send
-              </p>
-            </div>
+
+              <div className="w-full max-w-lg">
+                <div className="flex gap-2 items-end">
+                  <Textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message..."
+                    className="min-h-[44px] max-h-[120px] resize-none"
+                    rows={1}
+                  />
+                  <Button
+                    size="icon"
+                    onClick={() => handleSend(input)}
+                    disabled={!input.trim()}
+                  >
+                    <ArrowUp className="size-4" />
+                  </Button>
+                </div>
+                <p className="mt-1.5 text-center text-xs text-muted-foreground">
+                  Cmd+Enter to send
+                </p>
+              </div>
+            </>
           )}
         </>
       )}

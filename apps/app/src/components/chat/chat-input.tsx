@@ -6,7 +6,7 @@ import { ArrowUpIcon, SquareIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { VoiceRecorder } from "@/components/chat/voice-recorder";
-import { useActiveModel } from "@/hooks/use-active-model";
+import { useLoadedModels } from "@/hooks/use-loaded-models";
 
 export function ChatInput({
   onSend,
@@ -21,8 +21,8 @@ export function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isStreaming = status === "streaming" || status === "submitted";
 
-  const { activeModel, isLoadingModel } = useActiveModel();
-  const hasModel = activeModel !== null;
+  const { llm, isLoadingModel } = useLoadedModels();
+  const hasModel = llm !== null;
   const isDisabled = !hasModel || isLoadingModel;
 
   const handleSend = useCallback(() => {
@@ -103,10 +103,10 @@ export function ChatInput({
           <span>
             No model loaded.{" "}
             <Link
-              to="/models"
+              to="/settings"
               className="underline underline-offset-2 hover:text-foreground"
             >
-              Go to Models
+              Go to Settings
             </Link>
           </span>
         ) : (

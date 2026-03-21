@@ -57,7 +57,6 @@ function ConversationPage() {
   const { prompt } = Route.useSearch();
   const navigate = useNavigate();
   const chat = useChatWithPersistence(conversationId);
-  const [selectedModelId, setSelectedModelId] = useState<string | undefined>();
   const [voiceOutput, setVoiceOutput] = useState(false);
   const prevStatusRef = useRef(chat.status);
   const promptSentRef = useRef(false);
@@ -77,11 +76,14 @@ function ConversationPage() {
     }
   }, [prompt, chat, conversationId, navigate]);
 
-  const conversationQuery = useQuery(
-    orpc.chat.getConversation.queryOptions({
+  const conversationQuery = useQuery({
+    ...orpc.chat.getConversation.queryOptions({
       input: { id: conversationId },
     }),
-  );
+    // Refetch periodically until the conversation exists in DB
+    // (it's created lazily when the first message completes)
+    refetchInterval: (query) => (query.state.data ? false : 3000),
+  });
 
   const title = conversationQuery.data?.title;
 
@@ -125,8 +127,6 @@ function ConversationPage() {
       <ChatHeader
         conversationId={conversationId}
         title={title}
-        selectedModelId={selectedModelId}
-        onModelChange={setSelectedModelId}
         voiceOutput={voiceOutput}
         onVoiceOutputChange={setVoiceOutput}
       />

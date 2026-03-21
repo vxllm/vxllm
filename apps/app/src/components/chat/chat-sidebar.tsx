@@ -20,7 +20,7 @@ import { Skeleton } from "@vxllm/ui/components/skeleton";
 import { CircleIcon, Loader2, MessageSquarePlus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { useActiveModel } from "@/hooks/use-active-model";
+import { useLoadedModels } from "@/hooks/use-loaded-models";
 import { groupConversationsByDate, truncateTitle } from "@/lib/chat";
 import { orpc } from "@/utils/orpc";
 
@@ -168,7 +168,7 @@ export function ChatSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
 }
 
 function ActiveModelBadge() {
-  const { activeModel, isLoadingQuery } = useActiveModel();
+  const { llm, isLoading: isLoadingQuery } = useLoadedModels();
 
   if (isLoadingQuery) {
     return (
@@ -178,12 +178,12 @@ function ActiveModelBadge() {
     );
   }
 
-  if (activeModel) {
+  if (llm) {
     return (
       <div className="border-t p-3">
         <Badge variant="secondary" className="w-full justify-center gap-1.5 text-xs">
           <CircleIcon className="size-2 shrink-0 fill-green-500 text-green-500" />
-          {activeModel.modelInfo.displayName}
+          {llm.modelInfo.displayName}
         </Badge>
       </div>
     );
