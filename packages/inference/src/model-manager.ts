@@ -144,19 +144,37 @@ export class ModelManager {
   }
 
   /**
-   * Get the currently active (primary) model, if any.
-   * Returns the first loaded LLM model, or null if no model is loaded.
-   * @returns The active loaded model, or null if no model is loaded
+   * Get the loaded model for a specific type (node-llama-cpp models only).
+   * STT/TTS models run in the Python voice service and are never tracked here.
+   * @param type - "llm" or "embedding"
+   * @returns The loaded model of that type, or null
    */
-  getActive(): LoadedModel | null {
+  getByType(type: "llm" | "embedding"): LoadedModel | null {
     for (const entry of this._models.values()) {
-      if (entry.info.modelInfo.type === "llm") {
+      if (entry.info.modelInfo.type === type) {
         return entry.info;
       }
     }
-    // Fall back to any loaded model if no LLM type is found
-    const first = this._models.values().next();
-    return first.done ? null : first.value.info;
+    return null;
+  }
+
+  /**
+   * Get all loaded node-llama-cpp models grouped by type.
+   * Used by the Settings UI to display all slots.
+   */
+  getLoadedByType(): { llm: LoadedModel | null; embedding: LoadedModel | null } {
+    return {
+      llm: this.getByType("llm"),
+      embedding: this.getByType("embedding"),
+    };
+  }
+
+  /**
+   * Get the currently active LLM model.
+   * Alias for getByType("llm") — maintained for backward compat with chat endpoint.
+   */
+  getActive(): LoadedModel | null {
+    return this.getByType("llm");
   }
 
   /**
