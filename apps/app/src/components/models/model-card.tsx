@@ -49,7 +49,6 @@ export function ModelCard({
   sizeBytes,
   minRamGb,
   status,
-  format,
 }: ModelCardProps) {
   const queryClient = useQueryClient();
 
