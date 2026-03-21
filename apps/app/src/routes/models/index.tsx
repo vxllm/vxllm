@@ -1,5 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { Badge } from "@vxllm/ui/components/badge";
+import { Button } from "@vxllm/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@vxllm/ui/components/card";
 import { Input } from "@vxllm/ui/components/input";
 import {
   Select,
@@ -17,13 +26,32 @@ import {
   TableRow,
 } from "@vxllm/ui/components/table";
 import { useDebounce } from "@vxllm/ui/hooks/use-debounce";
-import { Search } from "lucide-react";
+import { Download, ExternalLink, Search } from "lucide-react";
 import { useState } from "react";
 
 import { DownloadProgress } from "@/components/models/download-progress";
 import { DownloadedModelRow } from "@/components/models/downloaded-model-row";
 import { ModelCard } from "@/components/models/model-card";
 import { orpc } from "@/utils/orpc";
+
+const SERVER_URL =
+  (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:11500";
+
+interface HfModel {
+  id: string;
+  name: string;
+  downloads: number;
+  likes: number;
+  tags: string[];
+  lastModified: string;
+  source: string;
+}
+
+function formatDownloads(count: number): string {
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
+  return String(count);
+}
 
 export const Route = createFileRoute("/models/")({
   component: ModelsPage,
@@ -35,6 +63,28 @@ function ModelsPage() {
   const [searchValue, setSearchValue] = useState("");
   const [typeFilter, setTypeFilter] = useState<ModelType | "all">("all");
   const debouncedSearch = useDebounce(searchValue, 300);
+
+  // HuggingFace search state
+  const [hfSearchValue, setHfSearchValue] = useState("");
+  const [hfTypeFilter, setHfTypeFilter] = useState<ModelType>("llm");
+  const [hfSubmittedQuery, setHfSubmittedQuery] = useState("");
+  const debouncedHfType = hfTypeFilter;
+
+  const hfSearchQuery = useQuery<{ models: HfModel[]; total: number }>({
+    queryKey: ["hf-search", hfSubmittedQuery, debouncedHfType],
+    queryFn: async () => {
+      const url = new URL(`${SERVER_URL}/api/models/search/hf`);
+      url.searchParams.set("q", hfSubmittedQuery);
+      url.searchParams.set("type", debouncedHfType);
+      url.searchParams.set("limit", "20");
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error("Failed to search HuggingFace");
+      return res.json();
+    },
+    enabled: !!hfSubmittedQuery,
+  });
+
+  const hfModels = hfSearchQuery.data?.models ?? [];
 
   // Downloaded models
   const downloadedQuery = useQuery(
@@ -164,6 +214,118 @@ function ModelsPage() {
                 status={model.status}
                 format={model.format}
               />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* HuggingFace Search */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Search HuggingFace</h2>
+          <p className="text-sm text-muted-foreground">
+            Find any GGUF model on HuggingFace.
+          </p>
+        </div>
+        <form
+          className="flex flex-col gap-3 sm:flex-row sm:items-center"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setHfSubmittedQuery(hfSearchValue.trim());
+          }}
+        >
+          <div className="relative flex-1">
+            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search HuggingFace models..."
+              value={hfSearchValue}
+              onChange={(e) => setHfSearchValue(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select
+            value={hfTypeFilter}
+            onValueChange={(val) => setHfTypeFilter(val as ModelType)}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="llm">LLM</SelectItem>
+              <SelectItem value="stt">STT</SelectItem>
+              <SelectItem value="tts">TTS</SelectItem>
+              <SelectItem value="embedding">Embedding</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button type="submit" variant="outline" disabled={!hfSearchValue.trim()}>
+            <Search className="mr-1 size-4" />
+            Search
+          </Button>
+        </form>
+
+        {hfSearchQuery.isLoading && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-40 w-full rounded-xl" />
+            ))}
+          </div>
+        )}
+
+        {hfSearchQuery.isError && (
+          <p className="py-4 text-sm text-destructive">
+            Failed to search HuggingFace. Please try again.
+          </p>
+        )}
+
+        {hfSubmittedQuery && !hfSearchQuery.isLoading && hfModels.length === 0 && (
+          <p className="py-4 text-sm text-muted-foreground">
+            No models found for "{hfSubmittedQuery}".
+          </p>
+        )}
+
+        {hfModels.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {hfModels.map((model) => (
+              <Card key={model.id}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="truncate text-sm">{model.name}</span>
+                  </CardTitle>
+                  <CardDescription className="flex items-center gap-3">
+                    <span>{formatDownloads(model.downloads)} downloads</span>
+                    <span>{model.likes} likes</span>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-3 flex flex-wrap gap-1">
+                    {model.tags.slice(0, 5).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`https://huggingface.co/${model.name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium transition-all hover:bg-muted hover:text-foreground"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      View
+                    </a>
+                    <a
+                      href={`https://huggingface.co/${model.name}/tree/main`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium transition-all hover:bg-muted hover:text-foreground"
+                    >
+                      <Download className="size-3.5" />
+                      Download
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

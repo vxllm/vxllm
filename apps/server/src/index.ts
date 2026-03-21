@@ -25,6 +25,7 @@ import { createCompletionsRoute } from "./routes/v1/completions";
 import { createEmbeddingsRoute } from "./routes/v1/embeddings";
 import { createModelsRoute } from "./routes/v1/models";
 import { createModelManagementRoute } from "./routes/api/models";
+import { hfSearch } from "./routes/api/hf-search";
 import { createAudioRoutes } from "./routes/v1/audio";
 import { wsRoutes, websocket } from "./routes/ws/audio-stream";
 import { createVoiceChatRoute } from "./routes/ws/chat-voice";
@@ -76,6 +77,7 @@ app.route("/v1", createModelsRoute());
 app.route("/v1/audio", createAudioRoutes());
 
 // ── Model Management API ──────────────────────────────────────────────────────
+app.route("/api/models/search/hf", hfSearch);
 app.route("/api/models", createModelManagementRoute({ downloadManager }));
 
 // ── oRPC Handlers (catch-all, must be AFTER specific routes) ──────────────────

@@ -78,9 +78,10 @@ export class DownloadManager {
       throw new Error(`Model not found in registry: ${resolveKey}`);
     }
 
-    // 2. Ensure MODELS_DIR exists
+    // 2. Ensure MODELS_DIR and type subdirectory exist
     const modelsDir = this.getModelsDir();
-    fs.mkdirSync(modelsDir, { recursive: true });
+    const typeDir = path.join(modelsDir, modelInfo.type);
+    fs.mkdirSync(typeDir, { recursive: true });
 
     // 3. Check if already downloaded
     const existing = await db
@@ -210,12 +211,15 @@ export class DownloadManager {
 
       // For GGUF models with a specific file, download just that file
       // For other formats (whisper, kokoro), the repo is the model — no single file
+      const typeDir = path.join(modelsDir, modelInfo.type);
+      fs.mkdirSync(typeDir, { recursive: true });
+
       if (modelInfo.fileName) {
         await this.downloadSingleFile(
           modelId,
           modelInfo,
           progress,
-          modelsDir,
+          typeDir,
           abortController,
         );
       } else {
@@ -522,7 +526,8 @@ export class DownloadManager {
     let resumedBytes = 0;
     if (modelInfo.fileName) {
       const modelsDir = this.getModelsDir();
-      const tempPath = path.join(modelsDir, `${modelInfo.fileName}.download`);
+      const typeDir = path.join(modelsDir, modelInfo.type);
+      const tempPath = path.join(typeDir, `${modelInfo.fileName}.download`);
       if (fs.existsSync(tempPath)) {
         resumedBytes = fs.statSync(tempPath).size;
       }
@@ -594,8 +599,10 @@ export class DownloadManager {
 
     if (modelRows.length > 0 && modelRows[0]!.fileName) {
       const modelsDir = this.getModelsDir();
-      const tempPath = path.join(modelsDir, `${modelRows[0]!.fileName}.download`);
-      const finalPath = path.join(modelsDir, modelRows[0]!.fileName);
+      const modelType = modelRows[0]!.type;
+      const typeDir = path.join(modelsDir, modelType);
+      const tempPath = path.join(typeDir, `${modelRows[0]!.fileName}.download`);
+      const finalPath = path.join(typeDir, modelRows[0]!.fileName);
 
       // Remove temp file
       if (fs.existsSync(tempPath)) {
