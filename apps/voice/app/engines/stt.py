@@ -48,7 +48,6 @@ class STTEngine:
         # If a specific path is provided, use it directly
         if model_path is not None:
             from faster_whisper import WhisperModel
-            from pathlib import Path
 
             p = Path(model_path)
             if p.is_dir() and (p / "model.bin").exists():

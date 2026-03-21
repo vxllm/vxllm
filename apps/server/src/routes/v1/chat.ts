@@ -63,11 +63,23 @@ export function createChatRoute(deps: {
     const provider = createLlamaProvider(deps.modelManager);
     const model = provider.chat(active.sessionId);
 
-    // Convert OpenAI messages format to AI SDK format
-    const aiMessages = request.messages.map((m) => ({
-      role: m.role as "system" | "user" | "assistant",
-      content: m.content ?? "",
-    }));
+    // Convert messages to AI SDK format.
+    // AI SDK v6 DefaultChatTransport sends messages with `parts` array
+    // instead of `content` string. Extract text from parts when content is absent.
+    const aiMessages = request.messages.map((m) => {
+      let content = m.content ?? "";
+      // If content is empty, try extracting from parts (AI SDK v6 format)
+      if (!content && Array.isArray((m as any).parts)) {
+        content = ((m as any).parts as Array<{ type: string; text?: string }>)
+          .filter((p) => p.type === "text" && p.text)
+          .map((p) => p.text!)
+          .join("");
+      }
+      return {
+        role: m.role as "system" | "user" | "assistant",
+        content,
+      };
+    });
 
     // ── Context truncation ─────────────────────────────────────────────
     // Estimate total tokens and truncate if they exceed 80% of the
