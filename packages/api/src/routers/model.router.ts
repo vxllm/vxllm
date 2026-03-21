@@ -62,7 +62,6 @@ export const modelRouter = {
       }
 
       const progress = await context.downloadManager.pull(input.name, {
-        variant: input.format,
         priority: input.priority,
       });
 

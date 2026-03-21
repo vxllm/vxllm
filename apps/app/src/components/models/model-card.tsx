@@ -60,6 +60,12 @@ export function ModelCard({
         queryClient.invalidateQueries({
           queryKey: orpc.models.list.queryOptions({ input: {} }).queryKey,
         });
+        queryClient.invalidateQueries({
+          queryKey: orpc.models.getDownloadStatus.queryOptions({ input: {} }).queryKey,
+        });
+      },
+      onError: (err) => {
+        toast.error(`Failed to download ${displayName}: ${err.message}`);
       },
     }),
   );
@@ -96,15 +102,7 @@ export function ModelCard({
               variant="outline"
               size="sm"
               disabled={downloadMutation.isPending || status === "downloading"}
-              onClick={() =>
-                downloadMutation.mutate({
-                  name,
-                  format:
-                    format === "gguf" || format === "whisper" || format === "kokoro"
-                      ? format
-                      : undefined,
-                })
-              }
+              onClick={() => downloadMutation.mutate({ name })}
             >
               {downloadMutation.isPending || status === "downloading" ? (
                 <Loader2 className="mr-1 size-4 animate-spin" />
