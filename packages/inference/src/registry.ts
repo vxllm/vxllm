@@ -7,6 +7,8 @@ export interface RegistryVariant {
   variant: string;
   repo: string;
   fileName: string | null;
+  /** Download strategy: "file" for single GGUF files, "repo" for entire HuggingFace repos (STT/TTS) */
+  downloadMethod: "file" | "repo";
   sizeBytes: number;
   minRamGb: number | null;
   recommendedVramGb: number | null;
@@ -105,6 +107,7 @@ export class Registry {
       variant: variant.variant,
       repo: variant.repo,
       fileName: variant.fileName,
+      downloadMethod: variant.downloadMethod ?? "file",
       localPath: null,
       sizeBytes: variant.sizeBytes,
       minRamGb: variant.minRamGb,

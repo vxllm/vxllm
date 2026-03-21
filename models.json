@@ -13,6 +13,7 @@
           "variant": "q4_k_m",
           "repo": "unsloth/Qwen3-4B-GGUF",
           "fileName": "Qwen3-4B-Q4_K_M.gguf",
+          "downloadMethod": "file",
           "sizeBytes": 2500000000,
           "minRamGb": 3,
           "recommendedVramGb": 4
@@ -31,6 +32,7 @@
           "variant": "q4_k_m",
           "repo": "microsoft/Phi-4-mini-instruct-GGUF",
           "fileName": "Phi-4-mini-instruct-Q4_K_M.gguf",
+          "downloadMethod": "file",
           "sizeBytes": 2500000000,
           "minRamGb": 3,
           "recommendedVramGb": 4
@@ -48,7 +50,8 @@
         {
           "variant": "default",
           "repo": "Systran/faster-whisper-large-v3-turbo",
-          "fileName": "model.bin",
+          "fileName": null,
+          "downloadMethod": "repo",
           "sizeBytes": 1510000000,
           "minRamGb": 2,
           "recommendedVramGb": null
@@ -66,7 +69,8 @@
         {
           "variant": "default",
           "repo": "nvidia/parakeet-tdt-0.6b-v2",
-          "fileName": "parakeet-tdt-0.6b-v2.nemo",
+          "fileName": null,
+          "downloadMethod": "repo",
           "sizeBytes": 600000000,
           "minRamGb": 1,
           "recommendedVramGb": null
@@ -84,7 +88,8 @@
         {
           "variant": "default",
           "repo": "Qwen/Qwen3-TTS-0.6B",
-          "fileName": "model.safetensors",
+          "fileName": null,
+          "downloadMethod": "repo",
           "sizeBytes": 1200000000,
           "minRamGb": 2,
           "recommendedVramGb": null
@@ -102,7 +107,8 @@
         {
           "variant": "default",
           "repo": "hexgrad/Kokoro-82M",
-          "fileName": "kokoro-v0_19.pth",
+          "fileName": null,
+          "downloadMethod": "repo",
           "sizeBytes": 330000000,
           "minRamGb": 0.5,
           "recommendedVramGb": null
@@ -121,6 +127,7 @@
           "variant": "q4_k_m",
           "repo": "nomic-ai/nomic-embed-text-v1.5-GGUF",
           "fileName": "nomic-embed-text-v1.5.Q4_K_M.gguf",
+          "downloadMethod": "file",
           "sizeBytes": 80000000,
           "minRamGb": 0.5,
           "recommendedVramGb": null

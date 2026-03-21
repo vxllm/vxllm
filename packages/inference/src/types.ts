@@ -53,6 +53,8 @@ export interface ModelInfo {
   repo: string | null;
   /** Specific file name in the repository */
   fileName: string | null;
+  /** Download strategy: "file" for single GGUF files, "repo" for entire HuggingFace repos (STT/TTS) */
+  downloadMethod: "file" | "repo";
   /** Local file system path if downloaded */
   localPath: string | null;
   /** Model file size in bytes */

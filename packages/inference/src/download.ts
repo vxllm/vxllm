@@ -1,4 +1,5 @@
-import { fileDownloadInfo } from "@huggingface/hub";
+import { fileDownloadInfo, listFiles } from "@huggingface/hub";
+import type { ListFileEntry } from "@huggingface/hub";
 import { db } from "@vxllm/db";
 import { downloadQueue, models } from "@vxllm/db/schema/models";
 import { env } from "@vxllm/env/server";
@@ -7,6 +8,18 @@ import fs from "node:fs";
 import path from "node:path";
 import type { DownloadProgress, ModelInfo } from "./types";
 import type { Registry } from "./registry";
+
+/** Files to skip when downloading an entire repo (non-essential) */
+const REPO_SKIP_FILES = new Set([
+  "README.md",
+  ".gitattributes",
+  ".gitignore",
+  "LICENSE",
+  "LICENSE.md",
+  "LICENSE.txt",
+  "NOTICE",
+  "NOTICE.md",
+]);
 
 /**
  * Manages model downloads from HuggingFace.
@@ -28,6 +41,27 @@ export class DownloadManager {
    */
   private getModelsDir(): string {
     return env.MODELS_DIR.replace("~", process.env.HOME ?? "~");
+  }
+
+  /**
+   * Recursively sum the size of all files in a directory.
+   * Used to calculate resumed byte offset for repo downloads.
+   */
+  private sumDirectorySize(dirPath: string): number {
+    let total = 0;
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        total += this.sumDirectorySize(fullPath);
+      } else if (entry.isFile()) {
+        // Only count fully downloaded files (not .download temp files)
+        if (!entry.name.endsWith(".download")) {
+          total += fs.statSync(fullPath).size;
+        }
+      }
+    }
+    return total;
   }
 
   /**
@@ -218,8 +252,9 @@ export class DownloadManager {
       const typeDir = path.join(modelsDir, modelInfo.type);
       fs.mkdirSync(typeDir, { recursive: true });
 
-      if (modelInfo.fileName) {
-        await this.downloadSingleFile(
+      if (modelInfo.downloadMethod === "repo") {
+        // STT/TTS models: download the entire HuggingFace repo
+        await this.downloadRepo(
           modelId,
           modelInfo,
           progress,
@@ -227,9 +262,14 @@ export class DownloadManager {
           abortController,
         );
       } else {
-        // For non-GGUF models (whisper, kokoro), mark as "downloaded" with the repo reference
-        // Actual model loading is handled by the Python voice service, so we just record the intent
-        await this.markCompleted(modelId, modelInfo, progress, null);
+        // LLM/Embedding models: download a single GGUF file
+        await this.downloadSingleFile(
+          modelId,
+          modelInfo,
+          progress,
+          typeDir,
+          abortController,
+        );
       }
     } catch (err) {
       if (abortController.signal.aborted) {
@@ -426,6 +466,182 @@ export class DownloadManager {
   }
 
   /**
+   * Download an entire HuggingFace repository (for STT/TTS models).
+   *
+   * Lists all files in the repo via the HuggingFace API, then downloads each
+   * file sequentially with aggregate progress tracking. Skips non-essential
+   * files (README, LICENSE, .gitattributes) to save bandwidth.
+   */
+  private async downloadRepo(
+    modelId: string,
+    modelInfo: ModelInfo,
+    progress: DownloadProgress,
+    typeDir: string,
+    abortController: AbortController,
+  ): Promise<void> {
+    if (!modelInfo.repo) {
+      throw new Error(`No repository specified for model: ${modelInfo.name}`);
+    }
+
+    // Create model-specific subfolder: ~/.vxllm/models/<type>/<model-name>/
+    const modelDir = path.join(typeDir, modelInfo.name.replace(/[/:]/g, "-"));
+    fs.mkdirSync(modelDir, { recursive: true });
+
+    // 1. List all files in the repo
+    const repoFiles: ListFileEntry[] = [];
+    for await (const entry of listFiles({
+      repo: modelInfo.repo,
+      recursive: true,
+    })) {
+      if (entry.type !== "file") continue;
+      // Skip non-essential files
+      const baseName = path.basename(entry.path);
+      if (REPO_SKIP_FILES.has(baseName)) continue;
+      repoFiles.push(entry);
+    }
+
+    if (repoFiles.length === 0) {
+      throw new Error(
+        `No downloadable files found in repository: ${modelInfo.repo}`,
+      );
+    }
+
+    // 2. Calculate total size from the file listing
+    const totalBytes = repoFiles.reduce((sum, f) => {
+      // Use LFS size if available (the actual file size), otherwise the entry size
+      const fileSize = f.lfs?.size ?? f.size;
+      return sum + fileSize;
+    }, 0);
+
+    // Update progress with accurate total from the repo listing
+    if (totalBytes > 0) {
+      progress.totalBytes = totalBytes;
+    }
+
+    // 3. Download each file into the model subfolder
+    let downloadedBytes = 0;
+    let lastSpeedUpdate = Date.now();
+    let lastSpeedBytes = 0;
+
+    for (const file of repoFiles) {
+      // Check for cancellation between files
+      if (abortController.signal.aborted) {
+        return;
+      }
+
+      const destPath = path.join(modelDir, file.path);
+      const destDir = path.dirname(destPath);
+      fs.mkdirSync(destDir, { recursive: true });
+
+      // Skip files that are already fully downloaded (for resume support)
+      const fileSize = file.lfs?.size ?? file.size;
+      if (fs.existsSync(destPath)) {
+        const existingStat = fs.statSync(destPath);
+        if (existingStat.size === fileSize) {
+          downloadedBytes += fileSize;
+          progress.downloadedBytes = downloadedBytes;
+          progress.progressPct =
+            progress.totalBytes > 0
+              ? Math.min(
+                  100,
+                  Math.round((downloadedBytes / progress.totalBytes) * 100),
+                )
+              : 0;
+          continue;
+        }
+      }
+
+      // Construct download URL
+      const downloadUrl = `https://huggingface.co/${modelInfo.repo}/resolve/main/${file.path}`;
+
+      const response = await fetch(downloadUrl, {
+        signal: abortController.signal,
+        redirect: "follow",
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to download ${file.path}: HTTP ${response.status} ${response.statusText}`,
+        );
+      }
+
+      if (!response.body) {
+        throw new Error(`No response body for ${file.path}`);
+      }
+
+      // Stream to a temp file, then rename
+      const tempPath = `${destPath}.download`;
+      const writer = fs.createWriteStream(tempPath, { flags: "w" });
+      const reader = response.body.getReader();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          writer.write(Buffer.from(value));
+          downloadedBytes += value.byteLength;
+
+          // Update aggregate progress
+          progress.downloadedBytes = downloadedBytes;
+          progress.progressPct =
+            progress.totalBytes > 0
+              ? Math.min(
+                  100,
+                  Math.round((downloadedBytes / progress.totalBytes) * 100),
+                )
+              : 0;
+
+          // Calculate speed (update every 500ms)
+          const now = Date.now();
+          const elapsed = now - lastSpeedUpdate;
+          if (elapsed >= 500) {
+            const bytesDelta = downloadedBytes - lastSpeedBytes;
+            progress.speedBps = Math.round((bytesDelta / elapsed) * 1000);
+            progress.eta =
+              progress.speedBps > 0
+                ? Math.round(
+                    (progress.totalBytes - downloadedBytes) / progress.speedBps,
+                  )
+                : null;
+            lastSpeedUpdate = now;
+            lastSpeedBytes = downloadedBytes;
+          }
+
+          // Periodically update download_queue in DB (every ~5% progress)
+          if (progress.progressPct % 5 === 0 && progress.progressPct > 0) {
+            await db
+              .update(downloadQueue)
+              .set({
+                progressPct: progress.progressPct,
+                downloadedBytes: progress.downloadedBytes,
+                speedBps: progress.speedBps,
+              })
+              .where(eq(downloadQueue.modelId, modelId))
+              .catch(() => {
+                /* non-critical */
+              });
+          }
+        }
+      } finally {
+        writer.end();
+      }
+
+      // Wait for the write stream to finish
+      await new Promise<void>((resolve, reject) => {
+        writer.on("finish", resolve);
+        writer.on("error", reject);
+      });
+
+      // Rename temp file to final destination
+      fs.renameSync(tempPath, destPath);
+    }
+
+    // Mark as completed — localPath is the model directory
+    await this.markCompleted(modelId, modelInfo, progress, modelDir);
+  }
+
+  /**
    * Mark a download as completed in memory and DB.
    */
   private async markCompleted(
@@ -542,12 +758,19 @@ export class DownloadManager {
       return;
     }
 
-    // Read the partial file size to determine resume offset
+    // Read partial progress to determine resume offset
     let resumedBytes = 0;
-    if (modelInfo.fileName) {
-      const modelsDir = this.getModelsDir();
-      const typeDir = path.join(modelsDir, modelInfo.type);
-      const modelSubDir = path.join(typeDir, modelInfo.name.replace(/[/:]/g, "-"));
+    const modelsDir = this.getModelsDir();
+    const typeDir = path.join(modelsDir, modelInfo.type);
+    const modelSubDir = path.join(typeDir, modelInfo.name.replace(/[/:]/g, "-"));
+
+    if (modelInfo.downloadMethod === "repo") {
+      // For repo downloads, sum the sizes of fully downloaded files in the model dir.
+      // The downloadRepo method will skip files that already exist with correct sizes.
+      if (fs.existsSync(modelSubDir)) {
+        resumedBytes = this.sumDirectorySize(modelSubDir);
+      }
+    } else if (modelInfo.fileName) {
       const tempPath = path.join(modelSubDir, `${modelInfo.fileName}.download`);
       if (fs.existsSync(tempPath)) {
         resumedBytes = fs.statSync(tempPath).size;
@@ -611,29 +834,41 @@ export class DownloadManager {
       progress.eta = null;
     }
 
-    // Delete partial file if it exists
+    // Delete partial/downloaded files if they exist
     const modelRows = await db
       .select()
       .from(models)
       .where(eq(models.id, modelId))
       .limit(1);
 
-    if (modelRows.length > 0 && modelRows[0]!.fileName) {
+    if (modelRows.length > 0) {
       const modelsDir = this.getModelsDir();
       const modelType = modelRows[0]!.type;
       const typeDir = path.join(modelsDir, modelType);
       const modelName = modelRows[0]!.name.replace(/[/:]/g, "-");
       const modelSubDir = path.join(typeDir, modelName);
-      const tempPath = path.join(modelSubDir, `${modelRows[0]!.fileName}.download`);
-      const finalPath = path.join(modelSubDir, modelRows[0]!.fileName);
 
-      // Remove temp file
-      if (fs.existsSync(tempPath)) {
-        fs.unlinkSync(tempPath);
-      }
-      // Remove completed file if it was partially written without rename
-      if (fs.existsSync(finalPath) && modelRows[0]!.status !== "downloaded") {
-        fs.unlinkSync(finalPath);
+      // Re-resolve to check downloadMethod
+      const modelInfo = await this.registry.resolve(modelRows[0]!.name);
+      const isRepoDownload = modelInfo?.downloadMethod === "repo";
+
+      if (isRepoDownload) {
+        // For repo downloads, remove the entire model directory (contains multiple files)
+        if (fs.existsSync(modelSubDir) && modelRows[0]!.status !== "downloaded") {
+          fs.rmSync(modelSubDir, { recursive: true, force: true });
+        }
+      } else if (modelRows[0]!.fileName) {
+        const tempPath = path.join(modelSubDir, `${modelRows[0]!.fileName}.download`);
+        const finalPath = path.join(modelSubDir, modelRows[0]!.fileName);
+
+        // Remove temp file
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+        // Remove completed file if it was partially written without rename
+        if (fs.existsSync(finalPath) && modelRows[0]!.status !== "downloaded") {
+          fs.unlinkSync(finalPath);
+        }
       }
     }
 
