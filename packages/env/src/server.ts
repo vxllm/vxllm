@@ -9,6 +9,7 @@ export const env = createEnv({
     PORT: z.coerce.number().min(1024).max(65535).default(11500),
     HOST: z.string().default("127.0.0.1"),
     MODELS_DIR: z.string().default("~/.vxllm/models"),
+    /** @deprecated Use VOICE_PORT instead. Bun constructs the URL from HOST + VOICE_PORT. */
     VOICE_URL: z.string().url().default("http://localhost:11501"),
     VOICE_PORT: z.coerce.number().min(1024).max(65535).default(11501),
     API_KEY: z.string().optional(),
