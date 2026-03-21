@@ -51,6 +51,7 @@ export function HfDownloadDialog({
   const [detectedType, setDetectedType] = useState("llm");
   const [selectedType, setSelectedType] = useState("llm");
   const [selectedFile, setSelectedFile] = useState("");
+  const [selectedBackend, setSelectedBackend] = useState<string>("auto");
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export function HfDownloadDialog({
     setLoading(true);
     setFiles([]);
     setSelectedFile("");
+    setSelectedBackend("auto");
 
     fetch(
       `${SERVER_URL}/api/models/hf/files?repo=${encodeURIComponent(repoId)}`,
@@ -90,6 +92,7 @@ export function HfDownloadDialog({
           repo: repoId,
           filename: selectedFile,
           type: selectedType,
+          backend: selectedBackend === "auto" ? undefined : selectedBackend,
         }),
       });
       if (res.ok) {
@@ -152,6 +155,38 @@ export function HfDownloadDialog({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Backend selector (STT/TTS only) */}
+            {(selectedType === "stt" || selectedType === "tts") && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Backend</label>
+                <p className="text-xs text-muted-foreground">
+                  Engine used to run this model. Auto-detect works for most models.
+                </p>
+                <Select
+                  value={selectedBackend}
+                  onValueChange={(val) => {
+                    if (val) setSelectedBackend(val);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto-detect</SelectItem>
+                    {selectedType === "stt" && (
+                      <>
+                        <SelectItem value="faster-whisper">faster-whisper</SelectItem>
+                        <SelectItem value="nemo" disabled>NeMo (coming soon)</SelectItem>
+                      </>
+                    )}
+                    {selectedType === "tts" && (
+                      <SelectItem value="kokoro">Kokoro</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* File picker */}
             <div className="space-y-1.5">

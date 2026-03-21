@@ -18,11 +18,27 @@ hfDownload.post("/", async (c) => {
     filename: string;
     type: string;
     displayName?: string;
+    backend?: string;
   };
 
   if (!body.repo || !body.filename) {
     return c.json({ error: "repo and filename required" }, 400);
   }
+
+  // Auto-detect backend if not provided
+  let backend = body.backend ?? null;
+  if (!backend) {
+    if (body.type === "llm" || body.type === "embedding") backend = "llama-cpp";
+    else if (body.type === "stt") backend = "faster-whisper";
+    else if (body.type === "tts") backend = "kokoro";
+  }
+
+  // Detect format properly
+  let format: string;
+  if (body.filename.endsWith(".gguf")) format = "gguf";
+  else if (body.type === "tts") format = "kokoro";
+  else if (body.type === "stt" && backend === "nemo") format = "nemo";
+  else format = "whisper";
 
   const modelsDir = env.MODELS_DIR.replace("~", process.env.HOME ?? "~");
   const modelId = crypto.randomUUID();
@@ -44,8 +60,8 @@ hfDownload.post("/", async (c) => {
     name: `${body.repo}:${body.filename}`,
     displayName: modelName,
     type: body.type as "llm" | "stt" | "tts" | "embedding",
-    format: body.filename.endsWith(".gguf") ? "gguf" : "whisper",
-    backend: null,
+    format: format as any,
+    backend: backend as any,
     variant: null,
     repo: body.repo,
     fileName: body.filename,
