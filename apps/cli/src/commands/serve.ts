@@ -1,7 +1,7 @@
 import { defineCommand } from "citty";
 import consola from "consola";
 import path from "node:path";
-import { spawn } from "node:child_process";
+// Using Bun.spawn for child process management
 
 export default defineCommand({
   meta: { name: "serve", description: "Start VxLLM server" },
@@ -37,7 +37,7 @@ export default defineCommand({
     process.env.HOST = args.host;
     if (args.model) process.env.DEFAULT_MODEL = args.model;
 
-    let voiceProcess: ReturnType<typeof spawn> | null = null;
+    let voiceProc: { kill: () => void; exited: Promise<number> } | null = null;
 
     // Start Python voice service if --voice is enabled
     if (args.voice) {
@@ -50,12 +50,11 @@ export default defineCommand({
       );
 
       try {
-        voiceProcess = spawn(
-          "uv",
-          ["run", "uvicorn", "app.main:app", "--host", args.host, "--port", args["voice-port"]],
+        const proc = Bun.spawn(
+          ["uv", "run", "uvicorn", "app.main:app", "--host", args.host, "--port", args["voice-port"]],
           {
             cwd: voiceDir,
-            stdio: "pipe",
+            stdio: ["ignore", "pipe", "pipe"],
             env: {
               ...process.env,
               VOICE_HOST: args.host,
@@ -64,13 +63,11 @@ export default defineCommand({
           },
         );
 
-        voiceProcess.on("error", (err: any) => {
-          consola.warn(`Voice service failed to start: ${err.message}`);
-          consola.info("Voice features will be unavailable. Install Python + uv to enable.");
-        });
+        voiceProc = proc;
 
-        voiceProcess.on("exit", (code: any) => {
-          if (code !== null && code !== 0) {
+        // Monitor for early exit
+        proc.exited.then((code) => {
+          if (code !== 0) {
             consola.warn(`Voice service exited with code ${code}`);
           }
         });
@@ -116,8 +113,8 @@ export default defineCommand({
 
       // Graceful shutdown — kill voice service too
       const shutdown = () => {
-        if (voiceProcess && !voiceProcess.killed) {
-          voiceProcess.kill("SIGTERM");
+        if (voiceProc && !voiceProc.killed) {
+          voiceProc.kill("SIGTERM");
         }
         process.exit(0);
       };
@@ -125,7 +122,7 @@ export default defineCommand({
       process.on("SIGTERM", shutdown);
       process.on("SIGINT", shutdown);
     } catch (err: unknown) {
-      if (voiceProcess && !voiceProcess.killed) voiceProcess.kill();
+      if (voiceProc && !voiceProc.killed) voiceProc.kill();
       const message = err instanceof Error ? err.message : String(err);
       consola.error(`Failed to start: ${message}`);
       process.exit(1);
