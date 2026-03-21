@@ -43,6 +43,9 @@ export function createChatRoute(deps: {
 
     // Resolve model -- check if any model is loaded
     const active = deps.modelManager.getActive();
+
+    // Use active model name if not specified in request
+    const modelName = request.model || active?.modelInfo.name || "unknown";
     if (!active) {
       return c.json(
         {
@@ -154,7 +157,7 @@ export function createChatRoute(deps: {
               id: requestId,
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
-              model: request.model,
+              model: modelName,
               choices: [
                 {
                   index: 0,
@@ -177,7 +180,7 @@ export function createChatRoute(deps: {
             id: requestId,
             object: "chat.completion.chunk",
             created: Math.floor(Date.now() / 1000),
-            model: request.model,
+            model: modelName,
             choices: [
               {
                 index: 0,
@@ -249,7 +252,7 @@ export function createChatRoute(deps: {
         id: requestId,
         object: "chat.completion",
         created: Math.floor(Date.now() / 1000),
-        model: request.model,
+        model: modelName,
         choices: [
           {
             index: 0,

@@ -13,16 +13,16 @@ const ToolCallSchema = z.object({
 // ── Chat Completion Message ─────────────────────────────────────────────────
 export const ChatCompletionMessageSchema = z.object({
   role: z.enum(["system", "user", "assistant", "tool"]),
-  content: z.string().nullable(),
+  content: z.string().nullable().optional(),
   tool_calls: z.array(ToolCallSchema).optional(),
   tool_call_id: z.string().optional(),
-});
+}).passthrough();
 export type ChatCompletionMessage = z.infer<typeof ChatCompletionMessageSchema>;
 
 // ── Chat Completion Request ─────────────────────────────────────────────────
 export const ChatCompletionRequestSchema = z.object({
   messages: z.array(ChatCompletionMessageSchema).min(1),
-  model: z.string(),
+  model: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().positive().optional(),
   stream: z.boolean().optional(),
