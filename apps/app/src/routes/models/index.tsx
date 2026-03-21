@@ -59,6 +59,18 @@ export const Route = createFileRoute("/models/")({
 
 type ModelType = "llm" | "stt" | "tts" | "embedding";
 
+const TYPE_LABELS: Record<ModelType | "all", string> = {
+  all: "All Types",
+  llm: "LLM",
+  stt: "STT",
+  tts: "TTS",
+  embedding: "Embedding",
+};
+
+const VALUE_TO_TYPE: Record<string, ModelType | "all"> = Object.fromEntries(
+  Object.entries(TYPE_LABELS).map(([key, label]) => [label, key as ModelType | "all"]),
+);
+
 function ModelsPage() {
   const [searchValue, setSearchValue] = useState("");
   const [typeFilter, setTypeFilter] = useState<ModelType | "all">("all");
@@ -69,6 +81,20 @@ function ModelsPage() {
   const [hfTypeFilter, setHfTypeFilter] = useState<ModelType>("llm");
   const [hfSubmittedQuery, setHfSubmittedQuery] = useState("");
   const debouncedHfType = hfTypeFilter;
+
+  // Default popular models query (runs on mount)
+  const hfPopularQuery = useQuery<{ models: HfModel[]; total: number }>({
+    queryKey: ["hf-popular", debouncedHfType],
+    queryFn: async () => {
+      const url = new URL(`${SERVER_URL}/api/models/search/hf`);
+      url.searchParams.set("q", "gguf");
+      url.searchParams.set("type", debouncedHfType);
+      url.searchParams.set("limit", "6");
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error("Failed to fetch popular models");
+      return res.json();
+    },
+  });
 
   const hfSearchQuery = useQuery<{ models: HfModel[]; total: number }>({
     queryKey: ["hf-search", hfSubmittedQuery, debouncedHfType],
@@ -84,7 +110,9 @@ function ModelsPage() {
     enabled: !!hfSubmittedQuery,
   });
 
-  const hfModels = hfSearchQuery.data?.models ?? [];
+  const hasSearched = !!hfSubmittedQuery;
+  const activeHfQuery = hasSearched ? hfSearchQuery : hfPopularQuery;
+  const hfModels = activeHfQuery.data?.models ?? [];
 
   // Downloaded models
   const downloadedQuery = useQuery(
@@ -128,18 +156,18 @@ function ModelsPage() {
           />
         </div>
         <Select
-          value={typeFilter}
-          onValueChange={(val) => setTypeFilter(val as ModelType | "all")}
+          value={TYPE_LABELS[typeFilter]}
+          onValueChange={(val) => setTypeFilter(val ? (VALUE_TO_TYPE[val] ?? "all") : "all")}
         >
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="llm">LLM</SelectItem>
-            <SelectItem value="stt">STT</SelectItem>
-            <SelectItem value="tts">TTS</SelectItem>
-            <SelectItem value="embedding">Embedding</SelectItem>
+            <SelectItem value="All Types">All Types</SelectItem>
+            <SelectItem value="LLM">LLM</SelectItem>
+            <SelectItem value="STT">STT</SelectItem>
+            <SelectItem value="TTS">TTS</SelectItem>
+            <SelectItem value="Embedding">Embedding</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -244,17 +272,21 @@ function ModelsPage() {
             />
           </div>
           <Select
-            value={hfTypeFilter}
-            onValueChange={(val) => setHfTypeFilter(val as ModelType)}
+            value={TYPE_LABELS[hfTypeFilter]}
+            onValueChange={(val) => {
+              if (!val) return;
+              const mapped = VALUE_TO_TYPE[val] as ModelType;
+              setHfTypeFilter(mapped);
+            }}
           >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="llm">LLM</SelectItem>
-              <SelectItem value="stt">STT</SelectItem>
-              <SelectItem value="tts">TTS</SelectItem>
-              <SelectItem value="embedding">Embedding</SelectItem>
+              <SelectItem value="LLM">LLM</SelectItem>
+              <SelectItem value="STT">STT</SelectItem>
+              <SelectItem value="TTS">TTS</SelectItem>
+              <SelectItem value="Embedding">Embedding</SelectItem>
             </SelectContent>
           </Select>
           <Button type="submit" variant="outline" disabled={!hfSearchValue.trim()}>
@@ -263,7 +295,7 @@ function ModelsPage() {
           </Button>
         </form>
 
-        {hfSearchQuery.isLoading && (
+        {activeHfQuery.isLoading && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-40 w-full rounded-xl" />
@@ -271,16 +303,20 @@ function ModelsPage() {
           </div>
         )}
 
-        {hfSearchQuery.isError && (
+        {activeHfQuery.isError && (
           <p className="py-4 text-sm text-destructive">
             Failed to search HuggingFace. Please try again.
           </p>
         )}
 
-        {hfSubmittedQuery && !hfSearchQuery.isLoading && hfModels.length === 0 && (
+        {hasSearched && !activeHfQuery.isLoading && hfModels.length === 0 && (
           <p className="py-4 text-sm text-muted-foreground">
             No models found for "{hfSubmittedQuery}".
           </p>
+        )}
+
+        {!activeHfQuery.isLoading && hfModels.length > 0 && !hasSearched && (
+          <p className="text-sm text-muted-foreground">Popular GGUF models</p>
         )}
 
         {hfModels.length > 0 && (
