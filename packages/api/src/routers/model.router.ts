@@ -10,7 +10,77 @@ import {
   UnloadModelInput,
 } from "../schemas/models";
 import { models } from "@vxllm/db/schema/models";
+import { settings } from "@vxllm/db/schema/settings";
+import { env } from "@vxllm/env/server";
 import type { ModelInfo } from "@vxllm/inference";
+
+// Settings keys for persisted model slots
+const SETTINGS_KEYS = {
+  llm: "loaded_llm_id",
+  embedding: "loaded_embedding_id",
+  stt: "loaded_stt_id",
+  tts: "loaded_tts_id",
+} as const;
+
+type ModelType = "llm" | "embedding" | "stt" | "tts";
+
+/** Persist a loaded model ID to the settings table. */
+async function persistModelSetting(
+  db: any,
+  type: ModelType,
+  modelId: string,
+): Promise<void> {
+  const key = SETTINGS_KEYS[type];
+  const now = Date.now();
+  await db
+    .insert(settings)
+    .values({ key, value: modelId, updatedAt: now })
+    .onConflictDoUpdate({
+      target: settings.key,
+      set: { value: modelId, updatedAt: now },
+    });
+}
+
+/** Clear a loaded model setting by deleting the row. */
+async function clearModelSetting(db: any, type: ModelType): Promise<void> {
+  const key = SETTINGS_KEYS[type];
+  await db.delete(settings).where(eq(settings.key, key));
+}
+
+/** Read a model setting. Returns the model DB ID or null. */
+async function readModelSetting(
+  db: any,
+  type: ModelType,
+): Promise<string | null> {
+  const key = SETTINGS_KEYS[type];
+  const [row] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, key))
+    .limit(1);
+  return row?.value ?? null;
+}
+
+/** Send a request to the Python voice service. Returns null on failure. */
+async function voiceServiceRequest(
+  path: string,
+  method: "GET" | "POST" = "GET",
+  body?: Record<string, unknown>,
+): Promise<any | null> {
+  try {
+    const url = `${env.VOICE_URL}${path}`;
+    const res = await fetch(url, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
 
 export const modelRouter = {
   // Query: list all models with optional filters
@@ -150,7 +220,7 @@ export const modelRouter = {
       return results;
     }),
 
-  // Mutation: load a downloaded model into memory for inference
+  // Mutation: load a model by ID and type — unified for all model types
   loadModel: publicProcedure
     .input(LoadModelInput)
     .handler(async ({ input, context }) => {
@@ -181,10 +251,28 @@ export const modelRouter = {
         );
       }
 
-      // Unload any currently active model before loading a new one
-      const active = context.modelManager.getActive();
-      if (active) {
-        await context.modelManager.unload(active.sessionId);
+      if (input.type === "stt" || input.type === "tts") {
+        // ── Voice model: proxy to Python voice service ──
+        const result = await voiceServiceRequest("/models/load", "POST", {
+          type: input.type,
+          model_path: row.localPath,
+        });
+        if (!result) {
+          throw new Error(
+            "Voice service is unavailable. Start the voice service first.",
+          );
+        }
+        await persistModelSetting(context.db, input.type, input.id);
+        return { success: true, modelId: input.id, type: input.type };
+      }
+
+      // ── LLM/Embedding: use ModelManager ──
+      // Auto-unload existing model of the same type
+      const existing = context.modelManager.getByType(
+        input.type as "llm" | "embedding",
+      );
+      if (existing) {
+        await context.modelManager.unload(existing.sessionId);
       }
 
       // Convert DB row to ModelInfo
@@ -206,10 +294,11 @@ export const modelRouter = {
       };
 
       const loadedModel = await context.modelManager.load(modelInfo);
+      await persistModelSetting(context.db, input.type, input.id);
       return loadedModel;
     }),
 
-  // Mutation: unload a model from memory
+  // Mutation: unload a model by type — unified for all model types
   unloadModel: publicProcedure
     .input(UnloadModelInput)
     .handler(async ({ input, context }) => {
@@ -217,16 +306,75 @@ export const modelRouter = {
         throw new Error("ModelManager not available");
       }
 
-      await context.modelManager.unload(input.sessionId);
+      if (input.type === "stt" || input.type === "tts") {
+        // ── Voice model: proxy to Python voice service ──
+        await voiceServiceRequest("/models/unload", "POST", {
+          type: input.type,
+        });
+        await clearModelSetting(context.db, input.type);
+        return { success: true };
+      }
+
+      // ── LLM/Embedding: use ModelManager ──
+      const loaded = context.modelManager.getByType(
+        input.type as "llm" | "embedding",
+      );
+      if (!loaded) {
+        throw new Error(`No ${input.type} model is currently loaded`);
+      }
+
+      await context.modelManager.unload(loaded.sessionId);
+      await clearModelSetting(context.db, input.type);
       return { success: true };
     }),
 
-  // Query: get the currently active (loaded) model
-  getActiveModel: publicProcedure.handler(async ({ context }) => {
-    if (!context.modelManager) {
-      return null;
+  // Query: get all loaded models grouped by type
+  getLoadedModels: publicProcedure.handler(async ({ context }) => {
+    const mm = context.modelManager;
+    const llamaModels = mm
+      ? mm.getLoadedByType()
+      : { llm: null, embedding: null };
+
+    // Query voice service for STT/TTS status
+    let stt: { modelId: string; modelName: string } | null = null;
+    let tts: { modelId: string; modelName: string } | null = null;
+    let voiceServiceStatus: "running" | "stopped" | "unavailable" =
+      "unavailable";
+
+    const voiceHealth = await voiceServiceRequest("/health");
+    if (voiceHealth) {
+      voiceServiceStatus = "running";
+      const modelsStatus = await voiceServiceRequest("/models/status");
+      if (modelsStatus) {
+        if (modelsStatus.stt?.loaded) {
+          const sttId = await readModelSetting(context.db, "stt");
+          stt = {
+            modelId: sttId ?? "",
+            modelName: modelsStatus.stt.model_name ?? "Unknown STT",
+          };
+        }
+        if (modelsStatus.tts?.loaded) {
+          const ttsId = await readModelSetting(context.db, "tts");
+          tts = {
+            modelId: ttsId ?? "",
+            modelName: modelsStatus.tts.model_name ?? "Unknown TTS",
+          };
+        }
+      }
     }
 
+    return {
+      llm: llamaModels.llm,
+      embedding: llamaModels.embedding,
+      stt,
+      tts,
+      voiceServiceStatus,
+    };
+  }),
+
+  // Backward compat: getActiveModel still works for callers that only need the LLM
+  getActiveModel: publicProcedure.handler(async ({ context }) => {
+    if (!context.modelManager) return null;
     return context.modelManager.getActive();
   }),
 };
