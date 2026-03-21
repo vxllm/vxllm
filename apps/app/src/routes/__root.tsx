@@ -53,11 +53,11 @@ function RootComponent() {
         disableTransitionOnChange
         storageKey="vite-ui-theme"
       >
-        <div className="flex h-svh">
+        <div className="flex h-svh overflow-hidden">
           <AppNav />
-          <div className="min-w-0 flex-1">
+          <main className="min-w-0 flex-1 h-full">
             <Outlet />
-          </div>
+          </main>
         </div>
         <Toaster richColors />
       </ThemeProvider>
