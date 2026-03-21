@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@vxllm/ui/components/button";
 import { Card, CardContent } from "@vxllm/ui/components/card";
-import { DownloadIcon, MenuIcon } from "lucide-react";
+import { Textarea } from "@vxllm/ui/components/textarea";
+import { ArrowUp, DownloadIcon, MenuIcon } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { useActiveModel } from "@/hooks/use-active-model";
 import { ModelSelector } from "@/components/chat/model-selector";
@@ -31,6 +33,8 @@ const EXAMPLE_PROMPTS = [
 export function ChatEmptyState() {
   const navigate = useNavigate();
   const { isMobile, openMobileSidebar } = useChatLayout();
+  const [input, setInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const downloadedModelsQuery = useQuery(
     orpc.models.list.queryOptions({
@@ -38,17 +42,33 @@ export function ChatEmptyState() {
     }),
   );
 
-  const { activeModel } = useActiveModel();
+  const { activeModel, unloadModel } = useActiveModel();
 
   const downloadedModels = downloadedModelsQuery.data ?? [];
   const hasDownloadedModels = downloadedModels.length > 0;
   const hasActiveModel = activeModel !== null;
 
+  const handleSend = (text: string) => {
+    if (!text.trim() || !hasActiveModel) return;
+    navigate({
+      to: "/chat",
+      search: { prompt: text.trim() },
+    });
+  };
+
   const handlePromptClick = (prompt: string) => {
+    if (!hasActiveModel) return;
     navigate({
       to: "/chat",
       search: { prompt },
     });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      handleSend(input);
+    }
   };
 
   return (
@@ -111,6 +131,25 @@ export function ChatEmptyState() {
                 <ModelSelector />
               </div>
             )}
+
+            {/* Active model indicator with unload option */}
+            {hasActiveModel && (
+              <div className="flex items-center gap-2">
+                <ModelSelector />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground"
+                  onClick={() => {
+                    if (activeModel?.sessionId) {
+                      unloadModel({ sessionId: activeModel.sessionId });
+                    }
+                  }}
+                >
+                  Unload
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="grid w-full max-w-lg grid-cols-2 gap-3">
@@ -118,7 +157,7 @@ export function ChatEmptyState() {
               <Card
                 key={item.title}
                 size="sm"
-                className="cursor-pointer transition-colors hover:bg-muted/50"
+                className={`transition-colors ${hasActiveModel ? "cursor-pointer hover:bg-muted/50" : "cursor-not-allowed opacity-50"}`}
                 onClick={() => handlePromptClick(item.prompt)}
               >
                 <CardContent>
@@ -130,6 +169,33 @@ export function ChatEmptyState() {
               </Card>
             ))}
           </div>
+
+          {/* Chat input — shown when a model is loaded */}
+          {hasActiveModel && (
+            <div className="w-full max-w-lg">
+              <div className="flex gap-2 items-end">
+                <Textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type a message..."
+                  className="min-h-[44px] max-h-[120px] resize-none"
+                  rows={1}
+                />
+                <Button
+                  size="icon"
+                  onClick={() => handleSend(input)}
+                  disabled={!input.trim()}
+                >
+                  <ArrowUp className="size-4" />
+                </Button>
+              </div>
+              <p className="mt-1.5 text-center text-xs text-muted-foreground">
+                ⌘+Enter to send
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>
