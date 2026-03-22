@@ -12,7 +12,7 @@ export function createSpeechRoute() {
   const app = new Hono();
 
   app.post("/speech", async (c) => {
-    const voiceUrl = env.VOICE_URL;
+    const voiceUrl = `http://127.0.0.1:${env.VOICE_PORT}`;
 
     try {
       const body = await c.req.json();

@@ -389,16 +389,34 @@ export const modelRouter = {
         if (enginesOrModels) {
           if (enginesOrModels.stt?.loaded) {
             const sttId = await readModelSetting(context.db, "stt");
+            let sttModelName = "Unknown STT";
+            if (sttId) {
+              const [sttRow] = await context.db
+                .select({ displayName: models.displayName })
+                .from(models)
+                .where(eq(models.id, sttId))
+                .limit(1);
+              if (sttRow) sttModelName = sttRow.displayName;
+            }
             stt = {
               modelId: sttId ?? "",
-              modelName: enginesOrModels.stt.model ?? enginesOrModels.stt.model_name ?? "Unknown STT",
+              modelName: sttModelName,
             };
           }
           if (enginesOrModels.tts?.loaded) {
             const ttsId = await readModelSetting(context.db, "tts");
+            let ttsModelName = "Unknown TTS";
+            if (ttsId) {
+              const [ttsRow] = await context.db
+                .select({ displayName: models.displayName })
+                .from(models)
+                .where(eq(models.id, ttsId))
+                .limit(1);
+              if (ttsRow) ttsModelName = ttsRow.displayName;
+            }
             tts = {
               modelId: ttsId ?? "",
-              modelName: enginesOrModels.tts.backend ?? enginesOrModels.tts.model_name ?? "Unknown TTS",
+              modelName: ttsModelName,
             };
           }
         }

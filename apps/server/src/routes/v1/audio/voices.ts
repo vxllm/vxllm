@@ -10,7 +10,7 @@ export function createVoicesRoute() {
   const app = new Hono();
 
   app.get("/voices", async (c) => {
-    const voiceUrl = env.VOICE_URL;
+    const voiceUrl = `http://127.0.0.1:${env.VOICE_PORT}`;
 
     try {
       const res = await fetch(`${voiceUrl}/voices`);

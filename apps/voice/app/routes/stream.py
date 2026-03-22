@@ -42,11 +42,14 @@ async def stream(ws: WebSocket) -> None:
     await ws.accept()
 
     # Make sure engines are ready.
+    if not stt_engine.is_loaded:
+        await ws.send_json({"type": "error", "detail": "STT model not loaded. Load one via the VxLLM API first."})
+        await ws.close(code=1011)
+        return
+
     try:
         if not vad_engine.is_loaded:
             await vad_engine.load()
-        if not stt_engine.is_loaded:
-            await stt_engine.load()
     except Exception as exc:
         await ws.send_json({"type": "error", "detail": f"Engine load failed: {exc}"})
         await ws.close(code=1011)

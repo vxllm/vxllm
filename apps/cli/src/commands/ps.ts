@@ -4,18 +4,25 @@ import { formatDuration } from "../utils/format";
 
 async function getVoiceStatus(voiceUrl: string): Promise<{
   running: boolean;
-  stt?: { model?: string; engine?: string } | null;
-  tts?: { model?: string; engine?: string } | null;
-  vad?: { engine?: string } | null;
+  stt?: { loaded?: boolean; model?: string; backend?: string } | null;
+  tts?: { loaded?: boolean; model?: string; backend?: string } | null;
+  vad?: { loaded?: boolean; backend?: string } | null;
 }> {
   try {
     const res = await fetch(`${voiceUrl}/health`);
     const data = (await res.json()) as {
-      stt?: { model?: string; engine?: string } | null;
-      tts?: { model?: string; engine?: string } | null;
-      vad?: { engine?: string } | null;
+      engines?: {
+        stt?: { loaded?: boolean; model?: string; backend?: string } | null;
+        tts?: { loaded?: boolean; model?: string; backend?: string } | null;
+        vad?: { loaded?: boolean; backend?: string } | null;
+      };
     };
-    return { running: true, ...data };
+    return {
+      running: true,
+      stt: data.engines?.stt,
+      tts: data.engines?.tts,
+      vad: data.engines?.vad,
+    };
   } catch {
     return { running: false };
   }
@@ -61,22 +68,22 @@ export default defineCommand({
       const voice = await getVoiceStatus(voiceUrl);
       if (voice.running) {
         consola.success(`VOICE SERVICE: running (port ${voicePort})`);
-        if (voice.stt) {
+        if (voice.stt?.loaded) {
           consola.info(
-            `  STT: ${voice.stt.model ?? "none"} (${voice.stt.engine ?? "unknown"})`,
+            `  STT: ${voice.stt.model ?? "none"} (${voice.stt.backend ?? "unknown"})`,
           );
         } else {
           consola.info("  STT: not loaded");
         }
-        if (voice.tts) {
+        if (voice.tts?.loaded) {
           consola.info(
-            `  TTS: ${voice.tts.model ?? "none"} (${voice.tts.engine ?? "unknown"})`,
+            `  TTS: ${voice.tts.model ?? "none"} (${voice.tts.backend ?? "unknown"})`,
           );
         } else {
           consola.info("  TTS: not loaded");
         }
-        if (voice.vad) {
-          consola.info(`  VAD: ${voice.vad.engine ?? "silero-vad"} (auto)`);
+        if (voice.vad?.loaded) {
+          consola.info(`  VAD: ${voice.vad.backend ?? "silero-vad"} (auto)`);
         }
       } else {
         consola.warn("VOICE SERVICE: stopped");

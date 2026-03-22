@@ -85,8 +85,8 @@
       "name": "qwen3-asr:0.6b",
       "displayName": "Qwen3 ASR 0.6B",
       "type": "stt",
-      "format": "whisper",
-      "backend": "faster-whisper",
+      "format": "nemo",
+      "backend": "nemo",
       "description": "Qwen3 automatic speech recognition, multilingual, 428K+ downloads",
       "tags": ["stt", "transcription", "multilingual", "qwen"],
       "variants": [
@@ -105,8 +105,8 @@
       "name": "parakeet:tdt-v3",
       "displayName": "Parakeet TDT v3",
       "type": "stt",
-      "format": "whisper",
-      "backend": "faster-whisper",
+      "format": "nemo",
+      "backend": "nemo",
       "description": "25 EU languages, RTFx ~3000+, NVIDIA NeMo",
       "tags": ["stt", "transcription", "multilingual", "fast"],
       "variants": [

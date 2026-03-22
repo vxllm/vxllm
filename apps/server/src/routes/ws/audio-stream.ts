@@ -25,7 +25,7 @@ wsRoutes.get(
 
     return {
       onOpen(_evt, ws) {
-        const voiceUrl = env.VOICE_URL.replace(/^http/, "ws");
+        const voiceUrl = `ws://127.0.0.1:${env.VOICE_PORT}`;
         voiceWs = new WebSocket(`${voiceUrl}/stream`);
 
         voiceWs.binaryType = "arraybuffer";

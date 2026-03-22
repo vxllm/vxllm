@@ -20,28 +20,33 @@ const statusCommand = defineCommand({
       const res = await fetch(`${voiceUrl}/health`);
       const data = (await res.json()) as {
         status?: string;
-        stt?: { model?: string; engine?: string } | null;
-        tts?: { model?: string; engine?: string } | null;
-        vad?: { engine?: string } | null;
+        engines?: {
+          stt?: { loaded?: boolean; model?: string; backend?: string } | null;
+          tts?: { loaded?: boolean; model?: string; backend?: string } | null;
+          vad?: { loaded?: boolean; backend?: string } | null;
+        };
       };
 
       consola.success(`Voice service: running (${voiceUrl})`);
-      if (data.stt) {
+      const stt = data.engines?.stt;
+      const tts = data.engines?.tts;
+      const vad = data.engines?.vad;
+      if (stt?.loaded) {
         consola.info(
-          `  STT: ${data.stt.model ?? "none"} (${data.stt.engine ?? "unknown"})`,
+          `  STT: ${stt.model ?? "none"} (${stt.backend ?? "unknown"})`,
         );
       } else {
         consola.info("  STT: not loaded");
       }
-      if (data.tts) {
+      if (tts?.loaded) {
         consola.info(
-          `  TTS: ${data.tts.model ?? "none"} (${data.tts.engine ?? "unknown"})`,
+          `  TTS: ${tts.model ?? "none"} (${tts.backend ?? "unknown"})`,
         );
       } else {
         consola.info("  TTS: not loaded");
       }
-      if (data.vad) {
-        consola.info(`  VAD: ${data.vad.engine ?? "silero-vad"} (auto)`);
+      if (vad?.loaded) {
+        consola.info(`  VAD: ${vad.backend ?? "silero-vad"} (auto)`);
       }
     } catch {
       consola.warn("Voice service not running.");
@@ -65,10 +70,10 @@ const loadSttCommand = defineCommand({
     const serverUrl = getServerUrl();
     consola.start(`Loading STT model: ${args.model}...`);
     try {
-      const res = await fetch(`${serverUrl}/rpc/voice.loadModel`, {
+      const res = await fetch(`${serverUrl}/rpc/models.loadModel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "stt", model: args.model }),
+        body: JSON.stringify({ type: "stt", id: args.model }),
       });
       if (!res.ok) {
         const text = await res.text();
@@ -97,10 +102,10 @@ const loadTtsCommand = defineCommand({
     const serverUrl = getServerUrl();
     consola.start(`Loading TTS model: ${args.model}...`);
     try {
-      const res = await fetch(`${serverUrl}/rpc/voice.loadModel`, {
+      const res = await fetch(`${serverUrl}/rpc/models.loadModel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "tts", model: args.model }),
+        body: JSON.stringify({ type: "tts", id: args.model }),
       });
       if (!res.ok) {
         const text = await res.text();
@@ -130,7 +135,7 @@ const unloadSttCommand = defineCommand({
     const serverUrl = getServerUrl();
     consola.start("Unloading STT model...");
     try {
-      const res = await fetch(`${serverUrl}/rpc/voice.unloadModel`, {
+      const res = await fetch(`${serverUrl}/rpc/models.unloadModel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "stt" }),
@@ -155,7 +160,7 @@ const unloadTtsCommand = defineCommand({
     const serverUrl = getServerUrl();
     consola.start("Unloading TTS model...");
     try {
-      const res = await fetch(`${serverUrl}/rpc/voice.unloadModel`, {
+      const res = await fetch(`${serverUrl}/rpc/models.unloadModel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "tts" }),

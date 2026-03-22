@@ -118,7 +118,6 @@ export function LoadedModels() {
           onLoad={(id) => loadModel(id, "stt")}
           onUnload={() => unloadModel("stt")}
           isLoading={isActing}
-          disabled={voiceServiceStatus !== "running"}
           accentColor="blue"
         />
         <ModelSlot
@@ -133,12 +132,11 @@ export function LoadedModels() {
           onLoad={(id) => loadModel(id, "tts")}
           onUnload={() => unloadModel("tts")}
           isLoading={isActing}
-          disabled={voiceServiceStatus !== "running"}
           accentColor="blue"
         />
-        {voiceServiceStatus !== "running" && (
+        {voiceServiceStatus === "stopped" && (
           <p className="text-xs text-muted-foreground">
-            Voice service is not running. Start it to manage STT/TTS models.
+            Voice service will start automatically when you load a model.
           </p>
         )}
       </div>
