@@ -348,6 +348,15 @@ export class NodeLlamaCppLanguageModel implements LanguageModelV3 {
     const textId = `text_${crypto.randomUUID().slice(0, 8)}`;
     let outputTokenCount = 0;
 
+    // Track cleanup so it only runs once
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      session.dispose();
+      sequence.dispose();
+    };
+
     const stream = new ReadableStream<LanguageModelV3StreamPart>({
       start: async (controller) => {
         try {
@@ -460,16 +469,23 @@ export class NodeLlamaCppLanguageModel implements LanguageModelV3 {
 
           controller.enqueue({ type: "finish", usage, finishReason });
           controller.close();
+
+          // Delay cleanup to allow the stream to flush to the network.
+          // controller.close() signals no more chunks but doesn't wait for
+          // the HTTP response body to be fully sent to the client.
+          setTimeout(cleanup, 100);
         } catch (err) {
           controller.enqueue({
             type: "error",
             error: err,
           });
           controller.close();
-        } finally {
-          session.dispose();
-          sequence.dispose();
+          cleanup();
         }
+      },
+      cancel: () => {
+        // Stream was cancelled by the client (e.g. abort)
+        cleanup();
       },
     });
 

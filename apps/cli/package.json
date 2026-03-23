@@ -17,7 +17,7 @@
     "@vxllm/llama-provider": "workspace:*",
     "@vxllm/db": "workspace:*",
     "@vxllm/env": "workspace:*",
-    "ai": "^6.0.0",
+    "ai": "^6.0.116",
     "drizzle-orm": "^0.45.1"
   },
   "devDependencies": {

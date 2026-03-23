@@ -36,6 +36,13 @@ export class NodeLlamaCppEmbeddingModel implements EmbeddingModelV3 {
       );
     }
 
+    // Guard: ensure the loaded model is an embedding model, not an LLM
+    if (entry.info.modelInfo.type !== "embedding") {
+      throw new Error(
+        `Model "${entry.info.modelInfo.displayName}" is a ${entry.info.modelInfo.type} model, not an embedding model. Load an embedding model first.`,
+      );
+    }
+
     const warnings: SharedV3Warning[] = [];
     const embeddings: number[][] = [];
     let totalTokens = 0;
